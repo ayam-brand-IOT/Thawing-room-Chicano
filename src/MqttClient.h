@@ -91,6 +91,7 @@
 #define ACK_TC              main_topic "ack_Tc"
 #define SPOILED_SENSOR      main_topic "spoiled_sensor"
 #define IR_TS               main_topic "IR_TS"
+#define REMAINING_D_START   main_topic "REMAINING_DELAY_START"
 
 // ERROR MESSAGES
 #define ON_CONNECTION_ERR_TXT "Error on connection"

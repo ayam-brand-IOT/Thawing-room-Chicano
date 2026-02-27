@@ -76,41 +76,28 @@ void Controller::setUpAnalogInputs() {
 }
 
 void Controller::setUpI2C() {
-  while (!rtc_i2c.begin(I2C_SDA, I2C_SCL)){
-    DEBUG("RTC I2C not found");
-    delay(1000);
-  }
-  
+  rtc_i2c.begin(I2C_SDA, I2C_SCL);
+  delay(10);
 }
 
 void Controller::setUpRTC() {
-  uint32_t currentMillis = millis();
-  const uint16_t timeout = 2*1000; //secs
-  while (!rtc.begin(&rtc_i2c)){
-    DEBUG(("Couldn't find RTC, restarting in "+ String(timeout - (millis() - currentMillis)/1000) + " seconds...").c_str());
-    delay(1000);
-    if(millis() - currentMillis > timeout) ESP.restart();
-  }
+  rtc_last_valid_datetime = DateTime(__DATE__, __TIME__);
+  rtc_last_valid_millis = millis();
 
-  DateTime now = rtc.now();
-  if (true) {
-    DEBUG("RTC time seems invalid. Adjusting to NTP time.");
-    
-    timeClient.begin();
-    timeClient.setTimeOffset(SECS_IN_HR * TIME_ZONE_OFFSET_HRS);
-    timeClient.setUpdateInterval(SECS_IN_HR);
-    timeClient.update();
+  if (!tryConnectRTC(true)) {
+    DEBUG("RTC not found at startup. Continuing with fallback clock.");
+  } else {
+    DateTime now = rtc.now();
+    if (rtc.lostPower() || !isDateTimeValid(now)) {
+      DEBUG("RTC time invalid. Syncing with NTP.");
+      syncRTCWithNTP();
+      now = rtc.now();
+    }
 
-    delay(1000); 
-
-    long epochTime = timeClient.getEpochTime();
-
-    // Convert received time from Epoch format to DateTime format
-    DateTime ntpTime(epochTime);
-
-    // Adjust RTC
-    rtc.adjust(ntpTime);
-
+    if (isDateTimeValid(now)) {
+      rtc_last_valid_datetime = now;
+      rtc_last_valid_millis = millis();
+    }
   }
 
   if(isTsContactLess()) setUpIRTc();
@@ -253,14 +240,28 @@ void Controller::setLoraTc(bool value) {
 }
 
 bool Controller::isRTCConnected() {
-  return rtc.begin(&rtc_i2c);
+  return tryConnectRTC();
 }
 
 DateTime Controller::getDateTime() {
-  return rtc.now();
-  // DateTime current_date(__DATE__, __TIME__);
-  // return current_date;
-   
+  if (tryConnectRTC()) {
+    // Re-sincronizar con NTP si el RTC acaba de reconectar
+    if (rtc_needs_ntp_sync) syncRTCWithNTP();
+
+    DateTime now = rtc.now();
+    if (isDateTimeValid(now)) {
+      rtc_last_valid_datetime = now;
+      rtc_last_valid_millis = millis();
+      return now;
+    }
+
+    // El RTC respondió pero con fecha inválida: puede ser batería muerta
+    rtc_connected = false;
+    rtc_needs_ntp_sync = true;
+    DEBUG("RTC returned invalid datetime. Using fallback clock.");
+  }
+
+  return buildFallbackDateTime();
 }
 
 uint64_t Controller::readAnalogInput(uint8_t input) {
@@ -582,6 +583,120 @@ bool Controller::thresLastState() {
 }
 
 void Controller::saveLogToSD(const String &message) {
-  if (logger.getFileName() == DEFAULT_LOG_FILE) logger.setFileName(rtc.now());
-  logger.writeSD(message, rtc.now());
+  const DateTime now = getDateTime();
+  if (logger.getFileName() == DEFAULT_LOG_FILE) logger.setFileName(now);
+  logger.writeSD(message, now);
+}
+
+bool Controller::isDateTimeValid(const DateTime& dt) const {
+  return dt.year() >= 2024 && dt.year() <= 2099;
+}
+
+bool Controller::tryConnectRTC(bool force) {
+  const uint32_t nowMs = millis();
+  const uint32_t reconnectIntervalMs = 5000;
+
+  if (!force && rtc_connected) return true;
+  if (!force && (nowMs - rtc_last_reconnect_attempt) < reconnectIntervalMs) return false;
+
+  rtc_last_reconnect_attempt = nowMs;
+
+  // Primer intento normal
+  rtc_connected = rtc.begin(&rtc_i2c);
+
+  if (!rtc_connected) {
+    // El bus I2C puede estar colgado: reset completo y reintento
+    resetI2CBus();
+    rtc_connected = rtc.begin(&rtc_i2c);
+  }
+
+  const bool just_reconnected = rtc_connected && !rtc_last_reported_connected;
+
+  if (rtc_connected != rtc_last_reported_connected) {
+    if (rtc_connected) {
+      DateTime now = rtc.now();
+      char buf[60];
+      snprintf(buf, sizeof(buf), "RTC connected - time: %04d/%02d/%02d %02d:%02d:%02d",
+               now.year(), now.month(), now.day(),
+               now.hour(), now.minute(), now.second());
+      DEBUG(buf);
+    } else {
+      DEBUG("RTC disconnected");
+    }
+    rtc_last_reported_connected = rtc_connected;
+  }
+
+  // Si acaba de reconectar, programar re-sync NTP para validar el tiempo interno
+  if (just_reconnected) rtc_needs_ntp_sync = true;
+
+  return rtc_connected;
+}
+
+void Controller::resetI2CBus() {
+  rtc_i2c.end();
+  delay(20);
+  // Enviar 9 pulsos de reloj para desbloquear dispositivos I2C colgados
+  pinMode(I2C_SDA, OUTPUT);
+  pinMode(I2C_SCL, OUTPUT);
+  digitalWrite(I2C_SDA, HIGH);
+  for (uint8_t i = 0; i < 9; i++) {
+    digitalWrite(I2C_SCL, HIGH);
+    delayMicroseconds(5);
+    digitalWrite(I2C_SCL, LOW);
+    delayMicroseconds(5);
+  }
+  digitalWrite(I2C_SDA, LOW);  // START condition
+  delayMicroseconds(5);
+  digitalWrite(I2C_SDA, HIGH); // STOP condition
+  delayMicroseconds(5);
+  delay(10);
+  rtc_i2c.begin(I2C_SDA, I2C_SCL);
+  delay(10);
+}
+
+void Controller::syncRTCWithNTP() {
+  if (!wifi.isConnected()) {
+    DEBUG("NTP sync skipped: WiFi not connected");
+    return;
+  }
+
+  timeClient.begin();
+  timeClient.setTimeOffset(SECS_IN_HR * TIME_ZONE_OFFSET_HRS);
+  timeClient.setUpdateInterval(SECS_IN_HR);
+
+  bool updated = timeClient.update();
+  if (!updated) updated = timeClient.forceUpdate();
+
+  if (!updated) {
+    DEBUG("NTP sync failed: no response");
+    return;
+  }
+
+  const unsigned long epochTime = timeClient.getEpochTime();
+  if (epochTime < 1700000000UL) {
+    DEBUG("NTP sync failed: invalid epoch");
+    return;
+  }
+
+  const DateTime ntpTime(epochTime);
+  rtc.adjust(ntpTime);
+
+  rtc_last_valid_datetime = ntpTime;
+  rtc_last_valid_millis = millis();
+  rtc_needs_ntp_sync = false;
+
+  char buf[60];
+  snprintf(buf, sizeof(buf), "RTC synced via NTP: %04d/%02d/%02d %02d:%02d:%02d",
+           ntpTime.year(), ntpTime.month(), ntpTime.day(),
+           ntpTime.hour(), ntpTime.minute(), ntpTime.second());
+  DEBUG(buf);
+}
+
+DateTime Controller::buildFallbackDateTime() const {
+  if (rtc_last_valid_millis == 0) {
+    return DateTime(__DATE__, __TIME__);
+  }
+
+  const uint32_t elapsedSeconds = (millis() - rtc_last_valid_millis) / 1000;
+  return rtc_last_valid_datetime + TimeSpan(elapsedSeconds);
 }

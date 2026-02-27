@@ -58,6 +58,12 @@ private:
     bool lora_tc = false;
     bool ir_sensor_ready = false;
     bool ir_sensor_attempted = false;
+    bool rtc_connected = false;
+    bool rtc_last_reported_connected = true;
+    bool rtc_needs_ntp_sync = false;
+    uint32_t rtc_last_reconnect_attempt = 0;
+    uint32_t rtc_last_valid_millis = 0;
+    DateTime rtc_last_valid_datetime = DateTime(__DATE__, __TIME__);
     Preferences preferences;
     #ifndef TIME_ZONE_OFFSET_HRS
     int8_t TIME_ZONE_OFFSET_HRS = 0;
@@ -75,6 +81,11 @@ private:
     void setUpI2C();
     void setUpIOS();
     void setUpLogger();
+    bool isDateTimeValid(const DateTime& dt) const;
+    bool tryConnectRTC(bool force = false);
+    void syncRTCWithNTP();
+    void resetI2CBus();
+    DateTime buildFallbackDateTime() const;
     void setUpAnalogInputs();
     void setUpAnalogOutputs();
     void setUpDigitalInputs();

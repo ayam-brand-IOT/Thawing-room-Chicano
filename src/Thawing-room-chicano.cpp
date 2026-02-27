@@ -1114,6 +1114,14 @@ void aknowledgementRoutine(){
 
   // publishTemperatures();
   publishPID();
+  // publish the remaining time for delay start
+  //calculate remianing mins for delayed start
+  DateTime current_date = controller.getDateTime();
+
+  const uint32_t remaining_hrs = current_date.hour() - stage2_hour;
+  const uint32_t remaining_mins = current_date.minute() - stage2_minute + (remaining_hrs * 60);
+
+  mqtt.publishData(REMAINING_D_START, remaining_mins);
 
   String keys[] = {AVG_TA_TOPIC, AVG_TS_TOPIC, AVG_TC_TOPIC, PID_OUTPUT};
   float values[] = {temp_data.avg_ta, temp_data.avg_ts, temp_data.avg_tc, pid_output};
