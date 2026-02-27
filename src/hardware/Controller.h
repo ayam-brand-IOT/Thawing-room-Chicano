@@ -19,6 +19,7 @@
 #include "SensorBuffer.h"
 #include <Adafruit_MLX90640.h>
 #include <DallasTemperature.h>
+#include <sys/time.h>
 #include "types.h"
 
 #define TEMPERATURE_MIN  -50 // Minimum temperature value (in Celsius)
@@ -61,6 +62,7 @@ private:
     bool rtc_connected = false;
     bool rtc_last_reported_connected = true;
     bool rtc_needs_ntp_sync = false;
+    bool ntp_synced_to_internal = false;
     uint32_t rtc_last_reconnect_attempt = 0;
     uint32_t rtc_last_valid_millis = 0;
     DateTime rtc_last_valid_datetime = DateTime(__DATE__, __TIME__);
@@ -85,6 +87,9 @@ private:
     bool tryConnectRTC(bool force = false);
     void syncRTCWithNTP();
     void resetI2CBus();
+    void syncInternalRTC(const DateTime& dt);
+    bool syncNTPToInternalRTC();
+    DateTime getDateTimeFromInternalRTC() const;
     DateTime buildFallbackDateTime() const;
     void setUpAnalogInputs();
     void setUpAnalogOutputs();
@@ -114,6 +119,12 @@ public:
     void init();
     void setUpRTC();
     bool isLoraTc();
+    // Stage2 scheduling
+    void saveStage2StartTime(uint8_t hour, uint8_t minute, uint8_t day, uint8_t month);
+    void loadStage2StartTime();
+    long getRemainingMinutesToStage2(const DateTime& now) const;
+    bool hasStage2TimeElapsed(const DateTime& now) const;
+    bool isStage2TimeSet() const;
     float getIRTemp();
     bool getFanState();
     bool isRTCConnected();

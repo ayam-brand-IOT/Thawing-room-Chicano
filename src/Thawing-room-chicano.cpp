@@ -224,12 +224,24 @@ void handleStage(){
 }
 
 void handleStage1(){
+  // Tras power-off: RTC_DATA_ATTR se borró → intentar recuperar desde flash,
+  // y solo si tampoco está en flash, recalcular con los parámetros actuales.
+  if (stage_1.getCurrentStep() > 0 && !controller.isStage2TimeSet()) {
+    controller.loadStage2StartTime();
+    if (!controller.isStage2TimeSet()) {
+      logger.println("Stage2 epoch lost - recalculating from current params");
+      controller.saveStage2StartTime(stage2_hour, stage2_minute, stage2_day, stage2_month);
+    }
+  }
+
   asyncLoopSprinkler(timers.stage1.sprinkler, stage1_params.sprinklerOffTime, stage1_params.sprinklerOnTime);
 
   // Init stage 1
   if (stage_1.getCurrentStep() == 0) {
     stage_1.init();
     logger.print("STAGE #1, current step: ");
+    // Calcular y persistir el epoch de transición Stage1->Stage2
+    controller.saveStage2StartTime(stage2_hour, stage2_minute, stage2_day, stage2_month);
     stage_1.nextStep();
   }
   
@@ -301,10 +313,11 @@ void handleStage1(){
 
   DateTime current_date = controller.getDateTime();
   
-  bool is_after_stage2_time = current_date.hour() >= stage2_hour && current_date.minute() >= stage2_minute;
-  bool is_after_stage_2_date = current_date.day() >= stage2_day && current_date.month() >= stage2_month;
-
-  if (is_after_stage2_time && is_after_stage_2_date){
+  if (controller.hasStage2TimeElapsed(current_date)) {
+    const long overdue = -controller.getRemainingMinutesToStage2(current_date);
+    char buf[60];
+    snprintf(buf, sizeof(buf), "Stage2 time reached (overdue: %ld min)", overdue);
+    logger.println(buf);
     stage_1.destroy();
     setStage(STAGE2);
   }
@@ -1114,14 +1127,11 @@ void aknowledgementRoutine(){
 
   // publishTemperatures();
   publishPID();
-  // publish the remaining time for delay start
-  //calculate remianing mins for delayed start
+
+  // Remaining mins usando epoch: sin overflow, correcto cruzando días/medianoche
   DateTime current_date = controller.getDateTime();
-
-  const uint32_t remaining_hrs = current_date.hour() - stage2_hour;
-  const uint32_t remaining_mins = current_date.minute() - stage2_minute + (remaining_hrs * 60);
-
-  mqtt.publishData(REMAINING_D_START, remaining_mins);
+  const long remaining_mins = controller.getRemainingMinutesToStage2(current_date);
+  mqtt.publishData(REMAINING_D_START, remaining_mins > 0 ? remaining_mins : 0);
 
   String keys[] = {AVG_TA_TOPIC, AVG_TS_TOPIC, AVG_TC_TOPIC, PID_OUTPUT};
   float values[] = {temp_data.avg_ta, temp_data.avg_ts, temp_data.avg_tc, pid_output};

@@ -6,6 +6,10 @@ Adafruit_MLX90640 mlx;
 TwoWire rtc_i2c = TwoWire(0);
 NTPClient timeClient(ntpUDP);
 
+// RTC memory: persiste entre reinicios de software (no power-off)
+RTC_DATA_ATTR static uint32_t g_stage2_epoch = 0;
+RTC_DATA_ATTR static bool     g_stage2_set   = false;
+
 // OneWire oneWire(ONE_WIRE_BUS);         // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
 // DallasTemperature temp_sensor_bus(&oneWire);  // PASS our oneWire reference to Dallas Temperature.
 
@@ -97,6 +101,7 @@ void Controller::setUpRTC() {
     if (isDateTimeValid(now)) {
       rtc_last_valid_datetime = now;
       rtc_last_valid_millis = millis();
+      syncInternalRTC(now);  // Mantener ESP32 RTC interno sincronizado
     }
   }
 
@@ -252,15 +257,39 @@ DateTime Controller::getDateTime() {
     if (isDateTimeValid(now)) {
       rtc_last_valid_datetime = now;
       rtc_last_valid_millis = millis();
+      syncInternalRTC(now);  // mantener interno en sync
+      ntp_synced_to_internal = true;  // externo es igual de bueno
       return now;
     }
 
     // El RTC respondió pero con fecha inválida: puede ser batería muerta
     rtc_connected = false;
     rtc_needs_ntp_sync = true;
-    DEBUG("RTC returned invalid datetime. Using fallback clock.");
+    DEBUG("RTC returned invalid datetime.");
   }
 
+  // Sin RTC externo: intentar NTP→interno si WiFi disponible (una sola vez)
+  if (!ntp_synced_to_internal && wifi.isConnected()) {
+    syncNTPToInternalRTC();
+  }
+
+  // Fallback 1: ESP32 RTC interno
+  DateTime internal = getDateTimeFromInternalRTC();
+  if (isDateTimeValid(internal)) {
+    static bool internal_rtc_warned = false;
+    if (!internal_rtc_warned) {
+      DEBUG("Ext RTC unavailable - using ESP32 internal RTC");
+      internal_rtc_warned = true;
+    }
+    return internal;
+  }
+
+  // Fallback 2: última fecha válida + delta millis
+  static bool millis_warned = false;
+  if (!millis_warned) {
+    DEBUG("All RTC sources failed - millis fallback");
+    millis_warned = true;
+  }
   return buildFallbackDateTime();
 }
 
@@ -699,4 +728,116 @@ DateTime Controller::buildFallbackDateTime() const {
 
   const uint32_t elapsedSeconds = (millis() - rtc_last_valid_millis) / 1000;
   return rtc_last_valid_datetime + TimeSpan(elapsedSeconds);
+}
+
+void Controller::syncInternalRTC(const DateTime& dt) {
+  struct timeval tv;
+  tv.tv_sec  = (time_t)dt.unixtime();
+  tv.tv_usec = 0;
+  settimeofday(&tv, nullptr);
+}
+
+bool Controller::syncNTPToInternalRTC() {
+  WiFiUDP localUDP;
+  NTPClient localClient(localUDP, "pool.ntp.org", 0, 60000);  // UTC puro
+  localClient.begin();
+
+  bool ok = false;
+  const uint8_t max_attempts = 5;
+  for (uint8_t i = 0; i < max_attempts && !ok; i++) {
+    if (localClient.update()) {
+      const unsigned long epochTime = localClient.getEpochTime();
+      if (epochTime > 1000000000UL) {
+        struct timeval tv;
+        tv.tv_sec  = (time_t)epochTime;
+        tv.tv_usec = 0;
+        settimeofday(&tv, nullptr);
+        ntp_synced_to_internal = true;
+        rtc_last_valid_datetime = DateTime((uint32_t)epochTime);
+        rtc_last_valid_millis   = millis();
+        char buf[50];
+        snprintf(buf, sizeof(buf), "NTP->internal RTC synced (epoch: %lu)", epochTime);
+        DEBUG(buf);
+        ok = true;
+      }
+    }
+    if (!ok) delay(200);
+  }
+
+  if (!ok) DEBUG("NTP->internal RTC sync failed");
+  localClient.end();
+  return ok;
+}
+
+DateTime Controller::getDateTimeFromInternalRTC() const {
+  struct timeval tv;
+  gettimeofday(&tv, nullptr);
+  return DateTime((uint32_t)tv.tv_sec);
+}
+
+void Controller::saveStage2StartTime(uint8_t hour, uint8_t minute, uint8_t day, uint8_t month) {
+  if (day == 0 || month == 0) {
+    DEBUG("Stage2 time invalid: day/month are 0");
+    return;
+  }
+
+  DateTime now = getDateTime();
+  int16_t year = now.year();
+
+  DateTime target(year, month, day, hour, minute, 0);
+
+  // Si la fecha objetivo ya pasó, usar el año siguiente
+  if (target.unixtime() < now.unixtime()) {
+    target = DateTime(year + 1, month, day, hour, minute, 0);
+  }
+
+  g_stage2_epoch = target.unixtime();
+  g_stage2_set   = true;
+
+  // Persistir en flash: sobrevive power-off (RTC_DATA_ATTR no sobrevive)
+  preferences.begin("stage2", false);
+  preferences.putUInt("epoch", g_stage2_epoch);
+  preferences.putBool("set", true);
+  preferences.end();
+
+  const long remaining = getRemainingMinutesToStage2(now);
+  char buf[80];
+  snprintf(buf, sizeof(buf), "Stage2 target: %04d/%02d/%02d %02d:%02d -> %ld min remaining",
+           target.year(), target.month(), target.day(),
+           target.hour(), target.minute(), remaining);
+  DEBUG(buf);
+}
+
+long Controller::getRemainingMinutesToStage2(const DateTime& now) const {
+  if (!g_stage2_set) return -1;
+  const long diff = (long)g_stage2_epoch - (long)now.unixtime();
+  return diff / 60L;
+}
+
+bool Controller::hasStage2TimeElapsed(const DateTime& now) const {
+  if (!g_stage2_set) return false;
+  return now.unixtime() >= g_stage2_epoch;
+}
+
+bool Controller::isStage2TimeSet() const {
+  return g_stage2_set;
+}
+
+void Controller::loadStage2StartTime() {
+  // RTC_DATA_ATTR se pierde en power-off: recuperar desde Preferences flash
+  if (g_stage2_set) return;  // ya en RAM, no hace falta
+
+  preferences.begin("stage2", true);
+  const bool saved = preferences.getBool("set", false);
+  if (saved) {
+    g_stage2_epoch = preferences.getUInt("epoch", 0);
+    g_stage2_set   = (g_stage2_epoch > 0);
+  }
+  preferences.end();
+
+  if (g_stage2_set) {
+    DEBUG("Stage2 epoch restored from flash");
+  } else {
+    DEBUG("Stage2 epoch not found in flash");
+  }
 }
