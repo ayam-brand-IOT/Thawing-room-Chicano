@@ -305,7 +305,8 @@ void WIFI::setUpWebServer(bool brigeSerial){
       File file = SD.open(full_path);
       if (file) {
         request->send(file, file.name(), "application/octet-stream", false);
-        file.close();
+        // Do NOT call file.close() here — ESPAsyncWebServer closes it automatically
+        // after the async transfer completes.
       } else {
         request->send(404, "text/plain", "File not found");
       }

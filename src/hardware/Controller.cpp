@@ -248,6 +248,23 @@ bool Controller::isRTCConnected() {
   return tryConnectRTC();
 }
 
+void Controller::forceNTPSync() {
+  if (!wifi.isConnected()) {
+    DEBUG("NTP sync skipped: no WiFi");
+    return;
+  }
+  if (rtc_connected) {
+    syncRTCWithNTP();                // NTP → RTC externo
+    DateTime now_utc = rtc.now();
+    syncInternalRTC(now_utc);        // propaga al interno
+    DEBUG("NTP sync: external + internal RTC updated");
+  } else {
+    if (syncNTPToInternalRTC()) {    // solo interno si no hay externo
+      DEBUG("NTP sync: internal RTC only (no ext RTC)");
+    }
+  }
+}
+
 DateTime Controller::getDateTime() {
   if (tryConnectRTC()) {
     // Re-sincronizar con NTP si el RTC acaba de reconectar
@@ -257,8 +274,8 @@ DateTime Controller::getDateTime() {
     if (isDateTimeValid(now)) {
       rtc_last_valid_datetime = now;
       rtc_last_valid_millis = millis();
-      syncInternalRTC(now);  // mantener interno en sync
-      ntp_synced_to_internal = true;  // externo es igual de bueno
+      syncInternalRTC(now);           // mantener interno en sync con externo
+      ntp_synced_to_internal = true;
       return now;
     }
 
@@ -268,7 +285,7 @@ DateTime Controller::getDateTime() {
     DEBUG("RTC returned invalid datetime.");
   }
 
-  // Sin RTC externo: intentar NTP→interno si WiFi disponible (una sola vez)
+  // Sin RTC externo: primera sync NTP al interno si WiFi disponible
   if (!ntp_synced_to_internal && wifi.isConnected()) {
     syncNTPToInternalRTC();
   }

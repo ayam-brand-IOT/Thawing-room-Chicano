@@ -67,11 +67,14 @@ Task low_priority_msgs(10000, TASK_FOREVER, &aknowledgementRoutine);
 Task high_priority_msgs(3000, TASK_FOREVER, &publishTemperatures);
 Task turn_off_flush(20, TASK_ONCE, &turn_off_flush_routine);
 Task turn_on_flush(20, TASK_ONCE, &turn_on_flush_routine);
+Task ntp_sync_task(24UL * 60UL * 60UL * 1000UL, TASK_FOREVER, &ntp_sync_callback);
 
 Scheduler runner;
 
 MqttClient mqtt;
 Controller controller;
+
+void ntp_sync_callback() { controller.forceNTPSync(); }
 TaskHandle_t communicationTask;
 PID air_in_feed_PID(&pid_input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);  // DIRECT or REVERSE
 
@@ -125,8 +128,10 @@ void setup() {
   runner.addTask(high_priority_msgs);
   runner.addTask(turn_on_flush);
   runner.addTask(turn_off_flush);
+  runner.addTask(ntp_sync_task);
   low_priority_msgs.enable();
   high_priority_msgs.enable();
+  ntp_sync_task.enable();
 
   if (false /* flush active */) {
     turn_on_flush.enable();
@@ -147,7 +152,7 @@ void setup() {
   mqtt.onConnect(onMQTTConnect);
   mqtt.connect(IP_ADDRESS, PORT, MQTT_ID, USERNAME, MQTT_PASSWORD);
 
-  xTaskCreatePinnedToCore(backgroundTasks, "communicationTask", 12000, NULL, 1, &communicationTask, 0);
+  xTaskCreatePinnedToCore(backgroundTasks, "communicationTask", 20000, NULL, 1, &communicationTask, 0);
 
   logger.println(F("===========> Reboted!! <==========="));
 
@@ -333,7 +338,13 @@ void handleStage2(){
     stage_2.init(); 
     logger.print("STAGE #2, current step: ");
     stage_2.nextStep();
-    delay(5000);
+    timers.stage2.init_delay = millis();  // start non-blocking 5s guard
+  }
+
+  // Non-blocking init guard: hold 5s before starting actuators
+  // During this window the loop keeps running: STOP button, MQTT, temps all work
+  else if (stage_2.getCurrentStep() == 1 && (millis() - timers.stage2.init_delay) < 5000) {
+    return;
   }
 
   // Step #1
@@ -490,7 +501,12 @@ void handleStage3(){
     stage_3.init();
     logger.print("STAGE #3, current step: ");
     stage_3.nextStep();
-    delay(5000);
+    timers.stage3.init_delay = millis();  // start non-blocking 5s guard
+  }
+
+  // Non-blocking init guard: hold 5s before starting actuators
+  else if (stage_3.getCurrentStep() == 1 && (millis() - timers.stage3.init_delay) < 5000) {
+    return;
   }
 
   // Step #1

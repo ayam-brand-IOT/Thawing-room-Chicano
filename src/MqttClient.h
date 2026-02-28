@@ -12,10 +12,6 @@
 
 #define main_topic            "cfpp4/"
 
-// const char* subtopichugo  = prro"pendejo"; 
-// #define subtopic22       prefix"pendejo2"
-
-
 //             subscribe topics    -------------------------------------------------------------------->
 #define sub_hours           main_topic "hours"
 #define sub_minutes         main_topic "minutes"

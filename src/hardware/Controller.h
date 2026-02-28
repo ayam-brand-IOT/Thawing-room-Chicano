@@ -118,6 +118,7 @@ public:
 
     void init();
     void setUpRTC();
+    void forceNTPSync();   // llamado por TaskScheduler cada 24hrs
     bool isLoraTc();
     // Stage2 scheduling
     void saveStage2StartTime(uint8_t hour, uint8_t minute, uint8_t day, uint8_t month);

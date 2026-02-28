@@ -100,11 +100,13 @@ typedef struct {
     uint32_t pid_turn_on;
     uint32_t pid_turn_off;
     uint32_t pid_publish;
+    uint32_t init_delay;   // non-blocking 5s init guard
   } stage2;
   
   struct {
     uint32_t fan;
     uint32_t sprinkler;
+    uint32_t init_delay;   // non-blocking 5s init guard
   } stage3;
   
   uint32_t temp_acquisition;
