@@ -7,6 +7,10 @@ ESP32-based (Heltec WiFi LoRa 32 V3) automated thawing room controller.
 ## Table of Contents
 
 - [Hardware](#hardware)
+- [Reliability & Safety](#reliability--safety)
+  - [Watchdog Timer](#watchdog-timer)
+  - [Non-Blocking Stage Init](#non-blocking-stage-init)
+  - [Safe Actuator State on Boot](#safe-actuator-state-on-boot)
 - [RTC Architecture](#rtc-architecture)
   - [Time Source Hierarchy](#time-source-hierarchy)
   - [NTP Synchronization](#ntp-synchronization)
@@ -28,6 +32,59 @@ ESP32-based (Heltec WiFi LoRa 32 V3) automated thawing room controller.
 | Storage | SD card (logs + config) |
 | Sensors | DS18B20 (Ta, Ts, Tc, Ti), optional MLX90614 IR (Ts), optional LoRa (Tc) |
 | Actuators | Fan F1 (fwd/rev), sprinkler valve S1, air damper, air PWM |
+
+---
+
+## Reliability & Safety
+
+This is an industrial machine. The firmware is designed so that **the process never stops unexpectedly** and any failure is handled gracefully.
+
+### Watchdog Timer
+
+A hardware watchdog (`esp_task_wdt`) monitors the main loop. If the loop freezes for more than **5 minutes** — due to a stuck I2C bus, SD deadlock, or any other cause — the ESP32 reboots automatically.
+
+```
+loop() called every iteration
+  │
+  └─ esp_task_wdt_reset()  ← "I am alive"
+
+If not called for 5 minutes:
+  └─ WDT fires → ESP32 reboots → setup() runs → actuators initialize to OFF
+```
+
+**Why 5 minutes and not 30 seconds:**  
+Legitimate slow operations (NTP sync, SD write, OTA update) can take several seconds. A 5-minute timeout ensures the WDT only fires on actual hangs, not on normal slow operations.
+
+**Boot cause logging:**  
+Every time the system starts, `logResetReason()` writes the cause to the SD log:
+
+| Cause | Log message |
+|---|---|
+| Normal power-on | `[BOOT] Power-on reset` |
+| `ESP.restart()` | `[BOOT] Software restart` |
+| Panic / crash | `[CRITICAL] Reset by panic / crash` |
+| Watchdog timeout | `[CRITICAL] Reset by task WDT` |
+| Brownout (low voltage) | `[CRITICAL] Reset by brownout` |
+
+### Non-Blocking Stage Init
+
+Stage 2 and Stage 3 previously called `delay(5000)` during initialization, which froze the entire loop for 5 seconds — making the STOP button, MQTT messages, and temperature reads unresponsive.
+
+This is now replaced with a **non-blocking timer guard**:
+
+```cpp
+// Step 0: record the init timestamp
+timers.stage2.init_delay = millis();
+
+// Step 1: return early until 5s have elapsed — loop keeps running normally
+if ((millis() - timers.stage2.init_delay) < 5000) return;
+```
+
+During the 5-second window the loop continues executing: STOP commands, MQTT, temperature updates and all other tasks remain fully responsive.
+
+### Safe Actuator State on Boot
+
+`setUpDigitalOutputs()` drives all output pins `LOW` during `init()`, before any stage logic runs. This ensures that on any reboot — whether planned, WDT-triggered, or brownout — all actuators (fan, valve, damper, PWM) start in the **off** state.
 
 ---
 
@@ -188,8 +245,27 @@ Uses [TaskScheduler](https://github.com/arkhipenko/TaskScheduler) library.
 | `turn_on_flush` | one-shot | Turn on flush valve |
 | `turn_off_flush` | one-shot (20 ms delay) | Turn off flush valve |
 
-All tasks are registered in `setup()`:
-```cpp
-runner.addTask(ntp_sync_task);
-ntp_sync_task.enable();
-```
+All tasks are registered and enabled in `setup()`. The watchdog is reset at the top of every `loop()` call before `runner.execute()`.
+
+---
+
+## Stability Improvements Log
+
+Chronological record of hardening changes made to this codebase.
+
+| # | Change | Problem solved |
+|---|---|---|
+| 1 | 3-layer RTC fallback (ext → internal → millis) | Single point of failure on DS3231 disconnect |
+| 2 | I2C bus reset (9 SCL pulses) | Frozen I2C bus after glitch |
+| 3 | Non-blocking RTC reconnect (5s cooldown) | Blocking retry stalled the loop |
+| 4 | NTP → internal RTC on first WiFi connect | No real time available without ext RTC |
+| 5 | `ntp_sync_task` every 24h via TaskScheduler | DS3231 drift accumulation (~5 s/month) |
+| 6 | Stage2 epoch stored as Unix timestamp | uint32 overflow crossing midnight |
+| 7 | Epoch persisted to NVS flash | Epoch lost on power-off |
+| 8 | `loadStage2StartTime()` recovery hierarchy | Epoch lost after WDT reboot |
+| 9 | `delay(5000)` → non-blocking init guard | STOP button ignored for 5s on stage init |
+| 10 | Watchdog timer (5 min timeout) | Frozen loop → actuators stuck indefinitely |
+| 11 | `logResetReason()` on every boot | No visibility into unexpected reboots |
+| 12 | All GPIOs driven LOW in `setUpDigitalOutputs()` | Undefined actuator state after reboot |
+| 13 | `clearStage2Time()` called in `stopRoutine()` | Stale epoch used on next process cycle |
+| 14 | SD file download — removed premature `file.close()` | Large log files truncated during download |

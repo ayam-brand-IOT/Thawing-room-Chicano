@@ -418,7 +418,7 @@ const char* STYLE_CSS = R"RAW_CSS(
     font-size:15px;
 }
 label{
-    overflow-x: scroll;
+    // overflow-x: scroll;
 }
 input {
     background: var(--white-color);border:0;

@@ -65,6 +65,7 @@ void Controller::setUpDigitalOutputs() {
   }
 
   pinMode(VALVE_IO, OUTPUT);
+  digitalWrite(VALVE_IO, LOW);
 
 }
 

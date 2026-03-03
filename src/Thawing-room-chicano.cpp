@@ -1,4 +1,10 @@
 #include "Thawing-room-chicano.h"
+#include <esp_task_wdt.h>
+
+// ======================== Watchdog ========================
+// 5 minutes: only reboots if the loop is completely frozen.
+// Legitimate slow operations (NTP, SD, OTA) stay well under this.
+#define WDT_TIMEOUT_S (5 * 60)
 
 // Stage parameters
 stage_parameters stage1_params;
@@ -85,6 +91,21 @@ void printStackUsage() {
   logger.println(buffer);
 }
 
+// ---- Log the cause of the previous reset (called after logger is ready) ----
+void logResetReason() {
+  const esp_reset_reason_t reason = esp_reset_reason();
+  switch (reason) {
+    case ESP_RST_POWERON:  logger.println(F("[BOOT] Power-on reset"));            break;
+    case ESP_RST_SW:       logger.println(F("[BOOT] Software restart"));           break;
+    case ESP_RST_PANIC:    logger.println(F("[CRITICAL] Reset by panic / crash")); break;
+    case ESP_RST_INT_WDT:  logger.println(F("[CRITICAL] Reset by interrupt WDT")); break;
+    case ESP_RST_TASK_WDT: logger.println(F("[CRITICAL] Reset by task WDT"));     break;
+    case ESP_RST_WDT:      logger.println(F("[CRITICAL] Reset by WDT (other)"));   break;
+    case ESP_RST_BROWNOUT: logger.println(F("[CRITICAL] Reset by brownout"));      break;
+    default:               logger.println(F("[BOOT] Reset reason: unknown"));      break;
+  }
+}
+
 void backgroundTasks(void* pvParameters) {
   for (;;) {
     controller.WiFiLoop();
@@ -99,6 +120,11 @@ void backgroundTasks(void* pvParameters) {
 
 
 void setup() {
+  // ── Watchdog: initialize before anything else ──────────────────────────────
+  esp_task_wdt_init(WDT_TIMEOUT_S, true);  // true = reboot on timeout
+  esp_task_wdt_add(NULL);                  // watch the main loop task
+  // ───────────────────────────────────────────────────────────────────────────
+
   controller.init();
 
   char SSID[SSID_SIZE];
@@ -154,6 +180,7 @@ void setup() {
 
   xTaskCreatePinnedToCore(backgroundTasks, "communicationTask", 20000, NULL, 1, &communicationTask, 0);
 
+  logResetReason();  // log why we (re)started — written after logger is ready
   logger.println(F("===========> Reboted!! <==========="));
 
   //Turn the PID on
@@ -165,6 +192,7 @@ void setup() {
 }
 
 void loop() {
+  esp_task_wdt_reset();  // keep watchdog alive — if blocked >5min: reboot
   runner.execute();
   // if is for testing porpuse comment this "if" and replace DateTime "now" for: DateTime now(__DATE__, __TIME__); 
   DateTime current_date = controller.getDateTime();
