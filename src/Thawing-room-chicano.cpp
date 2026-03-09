@@ -1,10 +1,4 @@
 #include "Thawing-room-chicano.h"
-#include <esp_task_wdt.h>
-
-// ======================== Watchdog ========================
-// 5 minutes: only reboots if the loop is completely frozen.
-// Legitimate slow operations (NTP, SD, OTA) stay well under this.
-#define WDT_TIMEOUT_S (5 * 60)
 
 // Stage parameters
 stage_parameters stage1_params;
@@ -120,11 +114,6 @@ void backgroundTasks(void* pvParameters) {
 
 
 void setup() {
-  // ── Watchdog: initialize before anything else ──────────────────────────────
-  esp_task_wdt_init(WDT_TIMEOUT_S, true);  // true = reboot on timeout
-  esp_task_wdt_add(NULL);                  // watch the main loop task
-  // ───────────────────────────────────────────────────────────────────────────
-
   controller.init();
 
   char SSID[SSID_SIZE];
@@ -192,7 +181,6 @@ void setup() {
 }
 
 void loop() {
-  esp_task_wdt_reset();  // keep watchdog alive — if blocked >5min: reboot
   runner.execute();
   // if is for testing porpuse comment this "if" and replace DateTime "now" for: DateTime now(__DATE__, __TIME__); 
   DateTime current_date = controller.getDateTime();
