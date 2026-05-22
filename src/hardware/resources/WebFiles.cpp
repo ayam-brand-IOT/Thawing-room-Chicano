@@ -21,6 +21,7 @@ const char* SERVER_INDEX_HTML = R"RAW_HTML(
     </nav>
 
     <div class="content">
+      {{SD_STATUS_ALERT}}
       <div id="top-bar">
         <div>
           <h1 style="margin: 0">OTA Update</h1>

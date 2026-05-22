@@ -1,4 +1,5 @@
 #include "Controller.h"
+#include "config_defaults.h"
 
 RTC_DS3231 rtc;
 WiFiUDP ntpUDP;
@@ -352,6 +353,10 @@ bool Controller::isWiFiConnected() {
   return wifi.isConnected();
 }
 
+bool Controller::canUseInternet() {
+  return wifi.canUseInternet();
+}
+
 bool Controller::refreshWiFiStatus() {
   return wifi.refreshWiFiStatus();
 }
@@ -385,13 +390,13 @@ void Controller::setUpWiFi(const char* ssid, const char* password, const char* h
   wifi.init(ssid, password, hostname);
 }
 
-void Controller::updateDefaultParameters(stage_parameters &stage1_params, stage_parameters &stage2_params, stage_parameters &stage3_params, room_parameters &room, data_tset &N_tset ){
+bool Controller::updateDefaultParameters(stage_parameters &stage1_params, stage_parameters &stage2_params, stage_parameters &stage3_params, room_parameters &room, data_tset &N_tset ){
   // Abre el archivo de configuración existente
   // File configFile = SPIFFS.open("/defaultParameters.txt", FILE_READ);
   File configFile = SD.open("/defaultParameters.txt", FILE_READ);
   if (!configFile) {
         DEBUG("Error al abrir el archivo de configuración para lectura");
-    return;
+    return false;
   }
 
   // Lee el contenido en una cadena
@@ -403,7 +408,7 @@ void Controller::updateDefaultParameters(stage_parameters &stage1_params, stage_
   auto error = deserializeJson(doc, content);
   if (error) {
     Serial.println("Error al parsear el archivo de configuración");
-    return;
+    return false;
   }
 
   // Update the values
@@ -436,62 +441,102 @@ void Controller::updateDefaultParameters(stage_parameters &stage1_params, stage_
   configFile = SD.open("/defaultParameters.txt", FILE_WRITE);
   if (!configFile) {
     DEBUG("Error al abrir el archivo de configuración para escritura");
-    return;
+    return false;
   }
 
   // Serializa el JSON al archivo
   if (serializeJson(doc, configFile) == 0) {
     DEBUG("Error al escribir en el archivo de configuración");
+    configFile.close();
+    return false;
   }
 
   configFile.close();
+  return true;
 }
 
-void Controller::runConfigFile(char* ssid, char* password, char* hostname, char* ip_address, uint16_t* port, char* mqtt_id, char* username, char* mqtt_password, char* prefix_topic, char* static_ip) {
-  // Iniciar SPIFFS
-  // if (!SPIFFS.begin(true)) {
-  //   DEBUG("An error has occurred while mounting SPIFFS");
-  //   return;
-  // }
+int Controller::runConfigFile(char* ssid, char* password, char* hostname, char* ip_address, uint16_t* port, char* mqtt_id, char* username, char* mqtt_password, char* prefix_topic, char* static_ip) {
+  const char* default_ssid = DEFAULT_SSID;
+  const char* default_password = DEFAULT_WIFI_PASSWORD;
+  const char* default_hostname = DEFAULT_HOSTNAME;
+  const char* default_ip_address = DEFAULT_IP_ADDRESS;
+  const char* default_static_ip = DEFAULT_STATIC_IP;
+  const char* default_gateway = DEFAULT_GATEWAY;
+  const uint16_t default_port = DEFAULT_PORT;
+  const char* default_mqtt_id = DEFAULT_MQTT_ID;
+  const char* default_username = DEFAULT_MQTT_USERNAME;
+  const char* default_mqtt_password = DEFAULT_MQTT_PASSWORD;
+  const int8_t default_tz_offset = DEFAULT_TIME_ZONE_OFFSET_HRS;
+  const bool default_ir_ts = DEFAULT_IR_TS;
+  const bool default_lora_tc = DEFAULT_LORA_TC;
+  const bool default_web_serial = DEFAULT_WEB_SERIAL;
 
-  // Leer archivo de configuración
-  File file = SD.open(CONFIG_FILE);
-  if (!file) {
-    while (true){
-      DEBUG("Failed to open config file");
-      delay(1000);
-    }
-    // Pending What to do if the file is not found
-    return;
+  auto applyDefaults = [&]() {
+    strlcpy(ssid, default_ssid, SSID_SIZE);
+    strlcpy(password, default_password, PASSWORD_SIZE);
+    strlcpy(hostname, default_hostname, HOSTNAME_SIZE);
+    strlcpy(ip_address, default_ip_address, IP_ADDRESS_SIZE);
+    strlcpy(static_ip, default_static_ip, IP_ADDRESS_SIZE);
+    *port = default_port;
+    strlcpy(mqtt_id, default_mqtt_id, MQTT_ID_SIZE);
+    strlcpy(username, default_username, MQTT_USERNAME_SIZE);
+    strlcpy(mqtt_password, default_mqtt_password, MQTT_PASSWORD_SIZE);
+    ir_ts = default_ir_ts;
+    setLoraTc(default_lora_tc);
+    logger.setOutput(default_web_serial ? Logger::WEBSERIAL : Logger::HW_SERIAL);
+    #ifndef TIME_ZONE_OFFSET_HRS
+      TIME_ZONE_OFFSET_HRS = default_tz_offset;
+    #endif
+    wifi.setStaticIP(default_static_ip, default_gateway);
+  };
+
+  applyDefaults();
+
+  if (!logger.isSdAvailable()) {
+    DEBUG("No SD available: using built-in defaults");
+    return 2;
   }
 
-  // Tamaño para el documento JSON
+  File file = SD.open(CONFIG_FILE, FILE_READ);
+  if (!file) {
+    DEBUG("Config file missing or unreadable: creating default config file");
+    writeDefaultConfigFile();
+    return 1;
+  }
+
   size_t size = file.size();
-  std::unique_ptr<char[]> buf(new char[size]);
+  if (size == 0) {
+    file.close();
+    DEBUG("Config file is empty: recreating default config file");
+    writeDefaultConfigFile();
+    return 1;
+  }
+
+  std::unique_ptr<char[]> buf(new char[size + 1]);
   file.readBytes(buf.get(), size);
+  buf[size] = '\0';
   file.close();
 
   DynamicJsonDocument doc(1024);
   DeserializationError error = deserializeJson(doc, buf.get());
   if (error) {
-      DEBUG("Failed to parse config file");
-    return;
+    DEBUG("Failed to parse config file: recreating default config file");
+    writeDefaultConfigFile();
+    return 1;
   }
 
-  // Asignar valores y verificar si están presentes en el JSON
   if (doc.containsKey("SSID")) strlcpy(ssid, doc["SSID"], SSID_SIZE);
   if (doc.containsKey("WIFI_PASSWORD")) strlcpy(password, doc["WIFI_PASSWORD"], PASSWORD_SIZE);
   if (doc.containsKey("HOST_NAME")) strlcpy(hostname, doc["HOST_NAME"], HOSTNAME_SIZE);
-  if (doc.containsKey("STATIC_IP")) strlcpy(static_ip, doc["STATIC_IP"], HOSTNAME_SIZE);
+  if (doc.containsKey("STATIC_IP")) strlcpy(static_ip, doc["STATIC_IP"], IP_ADDRESS_SIZE);
   if (doc.containsKey("IP_ADDRESS")) strlcpy(ip_address, doc["IP_ADDRESS"], IP_ADDRESS_SIZE);
   if (doc.containsKey("STATIC_IP") && doc.containsKey("GATEWAY")) {
     const char* ip = doc["STATIC_IP"];
     const char* gateway = doc["GATEWAY"];
     wifi.setStaticIP(ip, gateway);
-  } 
+  }
   if (doc.containsKey("PORT")) *port = doc["PORT"];
-  if (doc.containsKey("USERNAME")) strlcpy(username, doc["USERNAME"], HOSTNAME_SIZE);
-  // if (doc.containsKey("TOPIC")) strlcpy(prefix_topic, doc["TOPIC"], HOSTNAME_SIZE);
+  if (doc.containsKey("USERNAME")) strlcpy(username, doc["USERNAME"], MQTT_USERNAME_SIZE);
   if (doc.containsKey("MQTT_ID")) strlcpy(mqtt_id, doc["MQTT_ID"], MQTT_ID_SIZE);
   if (doc.containsKey("MQTT_PASSWORD")) strlcpy(mqtt_password, doc["MQTT_PASSWORD"], MQTT_PASSWORD_SIZE);
   if(doc.containsKey("IR_TS")) ir_ts = doc["IR_TS"];
@@ -501,38 +546,146 @@ void Controller::runConfigFile(char* ssid, char* password, char* hostname, char*
   DEBUG(("TIME_ZONE_OFFSET_HRS: " + String(TIME_ZONE_OFFSET_HRS)).c_str());
   if(doc.containsKey("LoRa_Tc")) setLoraTc(doc["LoRa_Tc"]);
   if(doc.containsKey("WEB_SERIAL")) logger.setOutput(doc["WEB_SERIAL"]);
-  // logging all values
+
   DEBUG(("SSID: " + String(ssid)).c_str());
   DEBUG(("WIFI_PASSWORD: " + String(password)).c_str());
   DEBUG(("HOST_NAME: " + String(hostname)).c_str());
   DEBUG(("IP_ADDRESS: " + String(ip_address)).c_str());
   DEBUG(("PORT: " + String(*port)).c_str());
   DEBUG(("USERNAME: " + String(username)).c_str());
-  DEBUG(("TOPIC: " + String(prefix_topic)).c_str());
   DEBUG(("MQTT_ID: " + String(mqtt_id)).c_str());
   DEBUG(("MQTT_PASSWORD: " + String(mqtt_password)).c_str());
+  return 0;
+}
 
+bool Controller::writeDefaultConfigFile() {
+  StaticJsonDocument<512> doc;
+  doc["SSID"] = DEFAULT_SSID;
+  doc["WIFI_PASSWORD"] = DEFAULT_WIFI_PASSWORD;
+  doc["HOST_NAME"] = DEFAULT_HOSTNAME;
+  doc["IP_ADDRESS"] = DEFAULT_IP_ADDRESS;
+  doc["STATIC_IP"] = DEFAULT_STATIC_IP;
+  doc["GATEWAY"] = DEFAULT_GATEWAY;
+  doc["PORT"] = DEFAULT_PORT;
+  doc["MQTT_ID"] = DEFAULT_MQTT_ID;
+  doc["USERNAME"] = DEFAULT_MQTT_USERNAME;
+  doc["MQTT_PASSWORD"] = DEFAULT_MQTT_PASSWORD;
+  doc["TIME_ZONE_OFFSET_HRS"] = DEFAULT_TIME_ZONE_OFFSET_HRS;
+  doc["IR_TS"] = DEFAULT_IR_TS;
+  doc["LoRa_Tc"] = DEFAULT_LORA_TC;
+  doc["WEB_SERIAL"] = DEFAULT_WEB_SERIAL;
+
+  File file = SD.open(CONFIG_FILE, FILE_WRITE);
+  if (!file) {
+    DEBUG("Failed to create default config file on SD");
+    return false;
+  }
+
+  if (serializeJson(doc, file) == 0) {
+    DEBUG("Failed to write default config file to SD");
+    file.close();
+    return false;
+  }
+
+  file.close();
+  DEBUG("Default config file created on SD");
+  return true;
 }
 
 void Controller::setUpDefaultParameters(stage_parameters &stage1_params, stage_parameters &stage2_params, stage_parameters &stage3_params, room_parameters &room, data_tset &N_tset){
+  if (!SD.exists("/defaultParameters.txt")) {
+    DEBUG("Default parameters file missing: using built-in defaults");
+    stage1_params.fanOnTime = 1;
+    stage1_params.fanRevONTime = 0;
+    stage1_params.fanOffTime = 1;
+    stage1_params.sprinklerOnTime = 0;
+    stage1_params.sprinklerOffTime = MIN_OFFTIME_STAGE1;
+
+    stage2_params.fanOnTime = 1;
+    stage2_params.fanRevONTime = 0;
+    stage2_params.fanOffTime = 1;
+    stage2_params.sprinklerOnTime = 0;
+    stage2_params.sprinklerOffTime = MIN_OFFTIME_STAGE2;
+
+    stage3_params.fanOnTime = 1;
+    stage3_params.fanRevONTime = 0;
+    stage3_params.fanOffTime = 1;
+    stage3_params.sprinklerOnTime = 0;
+    stage3_params.sprinklerOffTime = MIN_OFFTIME_STAGE3;
+
+    room.A = 0;
+    room.B = 0;
+    room.coef_pid_fwd = 100;
+    room.coef_pid_rev = 100;
+
+    N_tset.ts = 0;
+    N_tset.tc = 0;
+    return;
+  }
+
   File file = SD.open("/defaultParameters.txt", "r");
   if (!file) {
-    while (true){
-      DEBUG("Failed to open default parameters file");
-      delay(1000);
-    }
-    
+    DEBUG("Default parameters file missing: using built-in defaults");
+    stage1_params.fanOnTime = 1;
+    stage1_params.fanRevONTime = 0;
+    stage1_params.fanOffTime = 1;
+    stage1_params.sprinklerOnTime = 0;
+    stage1_params.sprinklerOffTime = MIN_OFFTIME_STAGE1;
+
+    stage2_params.fanOnTime = 1;
+    stage2_params.fanRevONTime = 0;
+    stage2_params.fanOffTime = 1;
+    stage2_params.sprinklerOnTime = 0;
+    stage2_params.sprinklerOffTime = MIN_OFFTIME_STAGE2;
+
+    stage3_params.fanOnTime = 1;
+    stage3_params.fanRevONTime = 0;
+    stage3_params.fanOffTime = 1;
+    stage3_params.sprinklerOnTime = 0;
+    stage3_params.sprinklerOffTime = MIN_OFFTIME_STAGE3;
+
+    room.A = 0;
+    room.B = 0;
+    room.coef_pid_fwd = 100;
+    room.coef_pid_rev = 100;
+
+    N_tset.ts = 0;
+    N_tset.tc = 0;
     return;
   }
 
   String jsonText = file.readString();
   file.close();
 
-  // Parsea el JSON
   StaticJsonDocument<1024> doc;
   DeserializationError error = deserializeJson(doc, jsonText);
   if (error) {
-    DEBUG("Error al parsear el JSON");
+    DEBUG("Error al parsear el JSON: using built-in defaults");
+    stage1_params.fanOnTime = 1;
+    stage1_params.fanRevONTime = 0;
+    stage1_params.fanOffTime = 1;
+    stage1_params.sprinklerOnTime = 0;
+    stage1_params.sprinklerOffTime = MIN_OFFTIME_STAGE1;
+
+    stage2_params.fanOnTime = 1;
+    stage2_params.fanRevONTime = 0;
+    stage2_params.fanOffTime = 1;
+    stage2_params.sprinklerOnTime = 0;
+    stage2_params.sprinklerOffTime = MIN_OFFTIME_STAGE2;
+
+    stage3_params.fanOnTime = 1;
+    stage3_params.fanRevONTime = 0;
+    stage3_params.fanOffTime = 1;
+    stage3_params.sprinklerOnTime = 0;
+    stage3_params.sprinklerOffTime = MIN_OFFTIME_STAGE3;
+
+    room.A = 0;
+    room.B = 0;
+    room.coef_pid_fwd = 100;
+    room.coef_pid_rev = 100;
+
+    N_tset.ts = 0;
+    N_tset.tc = 0;
     return;
   }
 
@@ -557,7 +710,6 @@ void Controller::setUpDefaultParameters(stage_parameters &stage1_params, stage_p
   if(stage1_params.sprinklerOffTime < MIN_OFFTIME_STAGE1 ) stage1_params.sprinklerOffTime = MIN_OFFTIME_STAGE1;
   if(stage2_params.sprinklerOffTime < MIN_OFFTIME_STAGE2 ) stage2_params.sprinklerOffTime = MIN_OFFTIME_STAGE2;
   if(stage3_params.sprinklerOffTime < MIN_OFFTIME_STAGE3 ) stage3_params.sprinklerOffTime  = MIN_OFFTIME_STAGE3;
-  
 
   room.A = doc["setPoint"]["A"];
   room.B = doc["setPoint"]["B"];
@@ -566,18 +718,11 @@ void Controller::setUpDefaultParameters(stage_parameters &stage1_params, stage_p
 
   N_tset.ts = doc["tset"]["tsSet"];
   N_tset.tc = doc["tset"]["tcSet"];
-
-  // // log all data
-
-
 }
 
 void Controller::WiFiLoop() {
-  if (!isWiFiConnected()) {
-    reconnectWiFi();
-    vTaskDelay(500 / portTICK_PERIOD_MS);
-    return;
-  }
+  reconnectWiFi();
+  vTaskDelay(500 / portTICK_PERIOD_MS);
 }
 
 void Controller::DEBUG(const char *message){

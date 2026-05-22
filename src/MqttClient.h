@@ -10,7 +10,7 @@
 #define MQTT_PASSWORD_SIZE 32
 #define PREFIX_SIZE 32
 
-#define main_topic            "cfpp4/"
+#define main_topic            "cfpp1/"
 
 //             subscribe topics    -------------------------------------------------------------------->
 #define sub_hours           main_topic "hours"
@@ -87,6 +87,7 @@
 #define ACK_TC              main_topic "ack_Tc"
 #define SPOILED_SENSOR      main_topic "spoiled_sensor"
 #define IR_TS               main_topic "IR_TS"
+#define SD_STATUS_TOPIC     main_topic "SD_status"
 #define REMAINING_D_START   main_topic "REMAINING_DELAY_START"
 
 // ERROR MESSAGES
@@ -109,6 +110,8 @@ class MqttClient {
     bool refreshMQTTStatus();
     bool isServiceAvailable();
     bool getConnectionStatus();
+    void setAllowed(bool allowed);
+    bool isAllowed();
     int responseToInt(byte *value, size_t len);
     void publishData(String topic, double value);
     void publishData(String topic, String value);

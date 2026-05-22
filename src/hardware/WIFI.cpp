@@ -187,15 +187,22 @@ void WIFI::setStaticIP(const char* ip, const char* gateway){
 }
 
 void WIFI::setUpWebServer(bool brigeSerial){
-  /*use mdns for host name resolution*/
-  while (!MDNS.begin(hostname)){ // http://esp32.local
-    DEBUG("Error setting up MDNS responder!");
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
+  /* use mDNS for hostname resolution when possible.
+     IMPORTANT: do not block here. In AP fallback mode mDNS can fail,
+     and blocking would prevent server.begin(), making 192.168.4.1 unreachable. */
+  if (WiFi.status() == WL_CONNECTED) {
+    if (MDNS.begin(hostname)) {
+      DEBUG("mDNS responder started");
+    } else {
+      DEBUG("mDNS responder not available, continuing without mDNS");
+    }
+  } else {
+    DEBUG("WiFi STA not connected, starting web server without mDNS");
   }
-  
-  DEBUG("mDNS responder started Pinche Hugo");
 
-  // Función para autenticación básica en todas las rutas
+  // Basic authentication for all routes. Credentials come from secrets.h:
+  //   #define www_username "..."
+  //   #define www_password "..."
   auto checkAuth = [&](AsyncWebServerRequest *request) {
     if (!request->authenticate(www_username, www_password)) {
       request->requestAuthentication();
@@ -235,7 +242,30 @@ void WIFI::setUpWebServer(bool brigeSerial){
     /*return index page which is stored in serverIndex */
   server.on("/", HTTP_GET, [&](AsyncWebServerRequest *request) {
     if(!checkAuth(request)) return;
-    const String doc = setLayOutInfo(SERVER_INDEX_HTML);
+    String doc = setLayOutInfo(SERVER_INDEX_HTML);
+    
+    // Add SD card status alert
+    String alert = "";
+    if (!logger.isSdAvailable()) {
+      alert = "<div style='"
+              "position:fixed;"
+              "top:0;"
+              "left:0;"
+              "width:100%;"
+              "z-index:9999;"
+              "background:#d60000;"
+              "color:white;"
+              "padding:22px 10px;"
+              "font-size:28px;"
+              "font-weight:bold;"
+              "text-align:center;"
+              "box-shadow:0 4px 10px rgba(0,0,0,0.35);"
+              "'>"
+              "WARNING: SD Card not detected! Data will not be persisted."
+              "</div>"
+              "<div style='height:85px;'></div>";
+    }
+    doc.replace("{{SD_STATUS_ALERT}}", alert);
     request->send(200, "text/html", doc);
   });
 
@@ -430,44 +460,54 @@ void WIFI::setUpWebServer(bool brigeSerial){
 }
 
 String WIFI::getIP(){
-  String ip =  MDNS.queryHost("beer-control").toString();
-  Serial.println(ip);
-  return ip;
+  if (WiFi.status() == WL_CONNECTED) return WiFi.localIP().toString();
+  if (ap_active) return WiFi.softAPIP().toString();
+  return String("0.0.0.0");
 }
 
-void WIFI::connectToWiFi(){
+void WIFI::applyStationConfig(){
+  WiFi.setHostname(hostname);
+
   if (use_static_ip) {
     if(!WiFi.config(static_ip, static_gateway, static_subnet, static_primary_dns, static_secondary_dns)) {
       DEBUG("Failed to configure static IP");
     }
+  } else {
+    // DHCP mode. Important when coming back from AP fallback.
+    WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE);
   }
+}
 
+void WIFI::connectToWiFi(){
+  WiFi.persistent(false);
+  WiFi.setAutoReconnect(true);
+
+  // Au démarrage, on interdit le point d'accès.
+  // Il ne sera créé qu'après 10 minutes sans WiFi.
+  WiFi.softAPdisconnect(true);
+  ap_active = false;
+
+  WiFi.mode(WIFI_STA);
+  applyStationConfig();
+
+  DEBUG(("Connecting to configured WiFi SSID: " + String(ssid)).c_str());
   WiFi.begin(ssid, password);
-  uint32_t notConnectedCounter = 0;
-  EEPROM.begin(32);
-  while (WiFi.status() != WL_CONNECTED) {
-    vTaskDelay(2000 / portTICK_PERIOD_MS);
-    DEBUG("Wifi connecting...");
-      
-    notConnectedCounter++;
-    if(notConnectedCounter > 7) { // Reset board if not connected after 5s
-      DEBUG("Resetting due to Wifi not connecting...");
-      const uint8_t num_of_tries = EEPROM.readInt(1);
-      if (num_of_tries == 3) break;          
-      else {
-        EEPROM.writeInt(1, num_of_tries + 1);
-        EEPROM.commit();
-        EEPROM.end();
-        ESP.restart();          
-      }
-    }
+
+  const uint32_t start_ms = millis();
+  while (WiFi.status() != WL_CONNECTED && (millis() - start_ms) < WIFI_CONNECT_TIMEOUT_MS) {
+    vTaskDelay(500 / portTICK_PERIOD_MS);
   }
 
-  EEPROM.writeInt(1, 0);
-  EEPROM.commit();
-  EEPROM.end();
-
-  DEBUG(("IP address: " + WiFi.localIP().toString()).c_str());
+  if (WiFi.status() == WL_CONNECTED) {
+    last_connection_state = true;
+    wifi_disconnected_since_ms = 0;
+    stopAccessPoint();
+    DEBUG(("Connected. IP address: " + WiFi.localIP().toString()).c_str());
+  } else {
+    last_connection_state = false;
+    wifi_disconnected_since_ms = millis();
+    DEBUG("Configured WiFi not reachable. Fallback AP will start after 10 minutes if WiFi is still unavailable.");
+  }
 }
 
 void WIFI::setUpOTA(){
@@ -515,15 +555,105 @@ bool WIFI::isConnected(){
   return WiFi.status() == WL_CONNECTED;
 }
 
+bool WIFI::isAccessPointActive(){
+  return ap_active;
+}
+
+bool WIFI::canUseInternet(){
+  return (WiFi.status() == WL_CONNECTED) && !ap_active;
+}
+
+void WIFI::startAccessPoint(){
+  if (ap_active) return;
+
+  WiFi.mode(WIFI_AP_STA);  // AP local + STA pour continuer à chercher Tristan.
+  applyStationConfig();
+
+  IPAddress ap_ip, ap_gateway, ap_subnet;
+  ap_ip.fromString(WIFI_AP_IP);
+  ap_gateway.fromString(WIFI_AP_GATEWAY);
+  ap_subnet.fromString(WIFI_AP_SUBNET);
+
+  WiFi.softAPConfig(ap_ip, ap_gateway, ap_subnet);
+
+  String ap_ssid = String(hostname) + "-AP";
+  if (ap_ssid == "-AP" || ap_ssid.length() == 0) {
+    ap_ssid = "ESP32-AP";
+  }
+
+  bool ok = WiFi.softAP(ap_ssid.c_str(), WIFI_AP_PASSWORD);
+
+  if (ok) {
+    ap_active = true;
+    DEBUG(("Fallback AP started: " + ap_ssid + " / IP: " + WiFi.softAPIP().toString()).c_str());
+  } else {
+    DEBUG("Failed to start fallback AP");
+  }
+}
+
+void WIFI::stopAccessPoint(){
+  if (!ap_active) return;
+
+  WiFi.softAPdisconnect(true);
+  ap_active = false;
+
+  WiFi.mode(WIFI_STA);
+  applyStationConfig();
+
+  DEBUG("Fallback AP stopped");
+}
+
 void WIFI::reconnect(){
+  const uint32_t now_ms = millis();
+
+  if (isConnected()) {
+    wifi_disconnected_since_ms = 0;
+    stopAccessPoint();
+    return;
+  }
+
+  if (wifi_disconnected_since_ms == 0) {
+    wifi_disconnected_since_ms = now_ms;
+  }
+
+  if (!ap_active && (now_ms - wifi_disconnected_since_ms) >= WIFI_AP_START_DELAY_MS) {
+    DEBUG("WiFi unavailable for 10 minutes. Starting fallback AP.");
+    startAccessPoint();
+  }
+
+  if ((now_ms - last_reconnect_attempt_ms) < WIFI_RECONNECT_INTERVAL_MS) return;
+  last_reconnect_attempt_ms = now_ms;
+
+  DEBUG(("Searching configured WiFi SSID: " + String(ssid)).c_str());
+
+  // Avant les 10 minutes : mode STA uniquement.
+  // Après création du point d'accès : mode AP_STA.
+  if (ap_active) {
+    WiFi.mode(WIFI_AP_STA);
+  } else {
+    WiFi.softAPdisconnect(true);
+    WiFi.mode(WIFI_STA);
+  }
+
+  applyStationConfig();
+
   WiFi.begin(ssid, password);
-  uint8_t timeout = 0;
-  vTaskDelay(2000 / portTICK_PERIOD_MS);
-  while ( WiFi.status() != WL_CONNECTED ){
-    vTaskDelay(2000 / portTICK_PERIOD_MS);
-    log_i(" waiting on wifi connection" );
-    timeout++;
-    if (timeout == 2) return;
+
+  const uint32_t start_ms = millis();
+  while (WiFi.status() != WL_CONNECTED && (millis() - start_ms) < 7000) {
+    vTaskDelay(250 / portTICK_PERIOD_MS);
+  }
+
+  if (WiFi.status() == WL_CONNECTED) {
+    DEBUG(("Reconnected. IP address: " + WiFi.localIP().toString()).c_str());
+    wifi_disconnected_since_ms = 0;
+    stopAccessPoint();
+  } else {
+    if (ap_active) {
+      DEBUG("Configured WiFi still unavailable, keeping fallback AP active");
+    } else {
+      DEBUG("Configured WiFi still unavailable, fallback AP not started yet");
+    }
   }
 }
 
@@ -532,13 +662,11 @@ void WIFI::DEBUG(const char *message){
   char buffer[100];
   snprintf(buffer, sizeof(buffer), "[WIFI]: %s", message);
   logger.println(buffer);
-}\
+}
 
 void WIFI::ERROR(ErrorType error){
   char buffer[100];
   snprintf(buffer, sizeof(buffer), " -> WIFI]: %s", errorMessages[error].c_str());
   logger.printError(buffer);
 }
-
-
 

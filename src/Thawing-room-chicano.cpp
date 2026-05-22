@@ -68,11 +68,16 @@ Task high_priority_msgs(3000, TASK_FOREVER, &publishTemperatures);
 Task turn_off_flush(20, TASK_ONCE, &turn_off_flush_routine);
 Task turn_on_flush(20, TASK_ONCE, &turn_on_flush_routine);
 Task ntp_sync_task(24UL * 60UL * 60UL * 1000UL, TASK_FOREVER, &ntp_sync_callback);
+Task sd_status_task(10000, TASK_FOREVER, &checkSdStatusRoutine);
 
 Scheduler runner;
 
 MqttClient mqtt;
 Controller controller;
+int sdStatusCode = -1;
+
+bool sd_last_available = true;
+bool sd_status_initialized = false;
 
 void ntp_sync_callback() { controller.forceNTPSync(); }
 TaskHandle_t communicationTask;
@@ -104,8 +109,8 @@ void backgroundTasks(void* pvParameters) {
   for (;;) {
     controller.WiFiLoop();
     
-    if(controller.isWiFiConnected()) {
-      controller.loopOTA();
+    if(controller.canUseInternet()) {
+      mqtt.loop();
     }
     // printStackUsage(); // Monitorea el uso de la pila
     vTaskDelay(100 / portTICK_PERIOD_MS);
@@ -127,7 +132,7 @@ void setup() {
   char MQTT_PASSWORD[MQTT_PASSWORD_SIZE];
   char PREFIX_TOPIC[PREFIX_SIZE];
 
-  controller.runConfigFile(SSID, PASS, HOST_NAME, IP_ADDRESS, &PORT, MQTT_ID, USERNAME, MQTT_PASSWORD, PREFIX_TOPIC, STATIC_IP);
+  sdStatusCode = controller.runConfigFile(SSID, PASS, HOST_NAME, IP_ADDRESS, &PORT, MQTT_ID, USERNAME, MQTT_PASSWORD, PREFIX_TOPIC, STATIC_IP);
   controller.setUpDefaultParameters(stage1_params, stage2_params, stage3_params, room, temp_set);
 
   start_btn.begin();
@@ -144,9 +149,11 @@ void setup() {
   runner.addTask(turn_on_flush);
   runner.addTask(turn_off_flush);
   runner.addTask(ntp_sync_task);
+  runner.addTask(sd_status_task);
   low_priority_msgs.enable();
   high_priority_msgs.enable();
   ntp_sync_task.enable();
+  sd_status_task.enable();
 
   if (false /* flush active */) {
     turn_on_flush.enable();
@@ -165,7 +172,10 @@ void setup() {
 
   mqtt.setCallback(callback);
   mqtt.onConnect(onMQTTConnect);
-  mqtt.connect(IP_ADDRESS, PORT, MQTT_ID, USERNAME, MQTT_PASSWORD);
+
+  if (controller.canUseInternet()) {
+    mqtt.connect(IP_ADDRESS, PORT, MQTT_ID, USERNAME, MQTT_PASSWORD);
+  }
 
   xTaskCreatePinnedToCore(backgroundTasks, "communicationTask", 20000, NULL, 1, &communicationTask, 0);
 
@@ -898,7 +908,11 @@ void callback(char *topic, byte *payload, unsigned int len) {
     logger.println("d_start BUTTON PRESSED ON NODE RED");
   }
 
-  if(update_default_parameters) controller.updateDefaultParameters(stage1_params, stage2_params, stage3_params, room, temp_set);
+  if(update_default_parameters) {
+    if (controller.updateDefaultParameters(stage1_params, stage2_params, stage3_params, room, temp_set)) {
+      mqtt.publishData(SD_STATUS_TOPIC, String(0));
+    }
+  }
 }
 
 void stopRoutine() {
@@ -1110,6 +1124,8 @@ void destroyStage3(){
 
 }
 
+extern int sdStatusCode;
+
 void onMQTTConnect() {
   mqtt.publishData(m_F1, controller.getFanState());
   // mqtt.publishData(m_F2, fan_2);
@@ -1121,6 +1137,11 @@ void onMQTTConnect() {
   mqtt.publishData(TI_TOPIC, TI);
   mqtt.publishData(PID_OUTPUT, pid_output);
   mqtt.publishData(SETPOINT, Setpoint);
+  if (sdStatusCode == 1) {
+    mqtt.publishData(SD_STATUS_TOPIC, String(1));
+  } else if (sdStatusCode == 2) {
+    mqtt.publishData(SD_STATUS_TOPIC, String(2));
+  }
 }
 
 void asyncLoopSprinkler(uint32_t &timer, uint32_t offTime, uint32_t onTime) {
@@ -1144,6 +1165,38 @@ void asyncLoopSprinkler(uint32_t &timer, uint32_t offTime, uint32_t onTime) {
     logger.println(buffer);
 
     publishStateChange(m_S1, false, "Stage 2 S1 Stop published ");
+  }
+}
+void checkSdStatusRoutine() {
+  const bool sd_available = logger.isSdAvailable();
+
+  if (!sd_status_initialized) {
+    sd_last_available = sd_available;
+    sd_status_initialized = true;
+
+    if (controller.canUseInternet()) {
+      mqtt.publishData(SD_STATUS_TOPIC, sd_available ? String(0) : String(2));
+    }
+
+    return;
+  }
+
+  if (sd_available == sd_last_available) {
+    return;
+  }
+
+  sd_last_available = sd_available;
+
+  if (!controller.canUseInternet()) {
+    return;
+  }
+
+  if (sd_available) {
+    mqtt.publishData(SD_STATUS_TOPIC, String(0));
+    logger.println("SD card recovered - MQTT status sent");
+  } else {
+    mqtt.publishData(SD_STATUS_TOPIC, String(2));
+    logger.println("SD card lost - MQTT alert sent");
   }
 }
 

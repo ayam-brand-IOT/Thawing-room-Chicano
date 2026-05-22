@@ -65,6 +65,7 @@ void sendTemperaturaAlert(float temp, String sensor);
 void turn_on_flush_routine();
 void turn_off_flush_routine();
 void ntp_sync_callback();  // forward declaration — definida debajo de controller
+void checkSdStatusRoutine();
 
 
 //---- timing settings -----////////////////////////////////////////////////////////////////////////////////

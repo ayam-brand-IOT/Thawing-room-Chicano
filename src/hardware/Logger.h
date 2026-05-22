@@ -41,6 +41,7 @@ public:
     
     Logger();
     void setupSD();
+    bool isSdAvailable();
     void getSDInfo();
     String getFileName();
     void setFileName(DateTime now);

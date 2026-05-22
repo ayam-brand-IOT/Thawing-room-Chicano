@@ -83,6 +83,7 @@ private:
     void setUpI2C();
     void setUpIOS();
     void setUpLogger();
+    bool writeDefaultConfigFile();
     bool isDateTimeValid(const DateTime& dt) const;
     bool tryConnectRTC(bool force = false);
     void syncRTCWithNTP();
@@ -130,6 +131,7 @@ public:
     bool getFanState();
     bool isRTCConnected();
     bool isTsContactLess();
+    bool canUseInternet();
     DateTime getDateTime();
     void setUpOneWireProbes(); // -----> NOT DEFINED YET
     void setLoraTc(bool value);
@@ -154,9 +156,9 @@ public:
     // Puto el que lo lea
     void connectToWiFi(bool web_server, bool web_serial, bool OTA); 
     void setUpWiFi(const char* ssid, const char* password, const char* hostname);
-    void runConfigFile(char* ssid, char* password, char* hostname, char* ip_address, uint16_t* port, char* mqtt_id, char* username, char* mqtt_password, char* prefix_topic, char* static_ip);
+    int runConfigFile(char* ssid, char* password, char* hostname, char* ip_address, uint16_t* port, char* mqtt_id, char* username, char* mqtt_password, char* prefix_topic, char* static_ip);
     void setUpDefaultParameters(stage_parameters &stage1_params, stage_parameters &stage2_params, stage_parameters &stage3_params, room_parameters &room, data_tset &N_tset);
-    void updateDefaultParameters(stage_parameters &stage1_params, stage_parameters &stage2_params, stage_parameters &stage3_params, room_parameters &room, data_tset &N_tset);
+    bool updateDefaultParameters(stage_parameters &stage1_params, stage_parameters &stage2_params, stage_parameters &stage3_params, room_parameters &room, data_tset &N_tset);
 
     //Logger
     void DEBUG(const char *message);
@@ -166,11 +168,26 @@ public:
 
     template <typename T> 
     bool updateConfigJson(const char* param, T value, String file = "/config.txt"){
+        // Check if SD is available first
+        if (!logger.isSdAvailable()) {
+            DEBUG("SD not available: cannot update config file");
+            return false;
+        }
+
         // Abre el archivo de configuración existente
         File configFile = SD.open(file, FILE_READ);
         if (!configFile) {
-            DEBUG("Error al abrir el archivo de configuración para lectura");
-            return false;
+            DEBUG("Config file missing: recreating with default values");
+            if (!writeDefaultConfigFile()) {
+                DEBUG("Error: failed to create config file");
+                return false;
+            }
+            // Reopen the newly created file
+            configFile = SD.open(file, FILE_READ);
+            if (!configFile) {
+                DEBUG("Error: failed to open newly created config file");
+                return false;
+            }
         }
 
         // Parsea el objeto JSON del archivo
@@ -178,8 +195,10 @@ public:
         auto error = deserializeJson(doc, configFile);
         if (error) {
             Serial.println("Error al parsear el archivo de configuración");
+            configFile.close();
             return false;
         }
+        configFile.close();
 
         // Update the values
         doc[param] = value;
@@ -194,6 +213,7 @@ public:
         // Serializa el JSON al archivo
         if (serializeJson(doc, configFile) == 0) {
             DEBUG("Error al escribir en el archivo de configuración");
+            configFile.close();
             return false;
         }
 

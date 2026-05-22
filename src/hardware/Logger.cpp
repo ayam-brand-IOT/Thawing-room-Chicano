@@ -117,15 +117,26 @@ void Logger::setupSD() {
 
     // Manually control CS for the SD card initialization
     digitalWrite(SS, LOW); // Set CS LOW to select the SD card (inverted logic)
-    while (!SD.begin(SS)) {
+    uint8_t attempts = 0;
+    while (attempts < 3 && !SD.begin(SS)) {
         printError(NOT_SDCARD);
         digitalWrite(SS, HIGH); // Set CS HIGH to deselect the SD card (inverted logic)
-        // return;
+        attempts++;
         delay(2000);
+        digitalWrite(SS, LOW);
     }
-    
-    theresSD = true;
+
+    if (SD.begin(SS)) {
+        theresSD = true;
+    } else {
+        theresSD = false;
+    }
+
     digitalWrite(SS, HIGH); // Set CS HIGH to deselect the SD card (inverted logic)
+}
+
+bool Logger::isSdAvailable() {
+    return theresSD;
 }
 
 void Logger::getSDInfo() {
