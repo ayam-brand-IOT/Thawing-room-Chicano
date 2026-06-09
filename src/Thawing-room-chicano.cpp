@@ -133,6 +133,13 @@ void setup() {
   char PREFIX_TOPIC[PREFIX_SIZE];
 
   sdStatusCode = controller.runConfigFile(SSID, PASS, HOST_NAME, IP_ADDRESS, &PORT, MQTT_ID, USERNAME, MQTT_PASSWORD, PREFIX_TOPIC, STATIC_IP);
+  if (sdStatusCode == 2) {
+    logger.println("SD absent: running internal defaults");
+  } else if (sdStatusCode == 1) {
+    logger.println("SD present: config file missing or invalid, using defaults and recreating config on SD");
+  } else {
+    logger.println("SD config loaded: using card configuration");
+  }
   controller.setUpDefaultParameters(stage1_params, stage2_params, stage3_params, room, temp_set);
 
   start_btn.begin();
@@ -168,8 +175,6 @@ void setup() {
   char stateBuffer[50];
   sprintf(stateBuffer, "Last state: %d %d", last_state.stage, last_state.step);
   logger.println(stateBuffer);
-  if (last_state.stage != IDLE) currentState = last_state;
-
   mqtt.setCallback(callback);
   mqtt.onConnect(onMQTTConnect);
 
@@ -512,9 +517,10 @@ void handleStage2(){
   bool isReadyForStage3 = TS_F >= temp_set.ts && TC_F >= temp_set.tc;
 
   if (isReadyForStage3 ){
-    stage_2.destroy();
-    setStage(STAGE3);
-  } 
+    logger.println("Stage3 conditions met, but auto-transition is disabled for stability.");
+    // stage_2.destroy();
+    // setStage(STAGE3);
+  }
   //  Stage 2 Process
 }
 
@@ -1167,6 +1173,8 @@ void asyncLoopSprinkler(uint32_t &timer, uint32_t offTime, uint32_t onTime) {
     publishStateChange(m_S1, false, "Stage 2 S1 Stop published ");
   }
 }
+
+// Periodic SD status check. Reload the configuration when the card is recovered.
 void checkSdStatusRoutine() {
   const bool sd_available = logger.isSdAvailable();
 
@@ -1186,6 +1194,11 @@ void checkSdStatusRoutine() {
   }
 
   sd_last_available = sd_available;
+
+  // If the SD card is reinserted, reload the config immediately.
+  if (sd_available) {
+    controller.reloadConfigFromSD();
+  }
 
   if (!controller.canUseInternet()) {
     return;

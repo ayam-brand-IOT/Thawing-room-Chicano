@@ -340,6 +340,7 @@ float Controller::readTempFrom(uint8_t channel) {
 // WIFI CLASS
 
 void Controller::connectToWiFi(bool web_server, bool web_serial, bool OTA) {
+  DEBUG("WiFi startup: attempting configured STA connection, fallback AP if unavailable");
   wifi.connectToWiFi();
   if(OTA) wifi.setUpOTA();
   if(web_server) wifi.setUpWebServer(web_serial);
@@ -493,13 +494,13 @@ int Controller::runConfigFile(char* ssid, char* password, char* hostname, char* 
   applyDefaults();
 
   if (!logger.isSdAvailable()) {
-    DEBUG("No SD available: using built-in defaults");
+    DEBUG("No SD available: using built-in defaults and continuing without SD config");
     return 2;
   }
 
   File file = SD.open(CONFIG_FILE, FILE_READ);
   if (!file) {
-    DEBUG("Config file missing or unreadable: creating default config file");
+    DEBUG("Config file missing or unreadable on SD: writing default config file and using built-in defaults");
     writeDefaultConfigFile();
     return 1;
   }
@@ -520,7 +521,7 @@ int Controller::runConfigFile(char* ssid, char* password, char* hostname, char* 
   DynamicJsonDocument doc(1024);
   DeserializationError error = deserializeJson(doc, buf.get());
   if (error) {
-    DEBUG("Failed to parse config file: recreating default config file");
+    DEBUG("Failed to parse config file on SD: recreating default config file and using built-in defaults");
     writeDefaultConfigFile();
     return 1;
   }
@@ -547,6 +548,7 @@ int Controller::runConfigFile(char* ssid, char* password, char* hostname, char* 
   if(doc.containsKey("LoRa_Tc")) setLoraTc(doc["LoRa_Tc"]);
   if(doc.containsKey("WEB_SERIAL")) logger.setOutput(doc["WEB_SERIAL"]);
 
+  DEBUG("Config file loaded from SD");
   DEBUG(("SSID: " + String(ssid)).c_str());
   DEBUG(("WIFI_PASSWORD: " + String(password)).c_str());
   DEBUG(("HOST_NAME: " + String(hostname)).c_str());
@@ -556,6 +558,30 @@ int Controller::runConfigFile(char* ssid, char* password, char* hostname, char* 
   DEBUG(("MQTT_ID: " + String(mqtt_id)).c_str());
   DEBUG(("MQTT_PASSWORD: " + String(mqtt_password)).c_str());
   return 0;
+}
+
+// Reload configuration from SD card when the card becomes available again.
+// This updates WiFi credentials and hostname dynamically at runtime.
+bool Controller::reloadConfigFromSD() {
+  char SSID[SSID_SIZE];
+  char PASS[PASSWORD_SIZE];
+  char HOST_NAME[HOSTNAME_SIZE];
+  char IP_ADDRESS[IP_ADDRESS_SIZE];
+  char STATIC_IP[IP_ADDRESS_SIZE];
+  uint16_t PORT;
+  char MQTT_ID[MQTT_ID_SIZE];
+  char USERNAME[MQTT_USERNAME_SIZE];
+  char MQTT_PASSWORD[MQTT_PASSWORD_SIZE];
+  char PREFIX_TOPIC[PREFIX_SIZE];
+
+  int status = runConfigFile(SSID, PASS, HOST_NAME, IP_ADDRESS, &PORT, MQTT_ID, USERNAME, MQTT_PASSWORD, PREFIX_TOPIC, STATIC_IP);
+  if (status == 0 || status == 1) {
+    logger.println("SD config reloaded from SD");
+    setUpWiFi(SSID, PASS, HOST_NAME);
+    return true;
+  }
+  logger.println("Failed to reload SD config after SD recovery");
+  return false;
 }
 
 bool Controller::writeDefaultConfigFile() {

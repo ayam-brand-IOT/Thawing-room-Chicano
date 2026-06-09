@@ -457,6 +457,7 @@ void WIFI::setUpWebServer(bool brigeSerial){
     WebSerial.onMessage(recvMsg);
   }
   server.begin();
+  web_server_started = true;
 }
 
 String WIFI::getIP(){
@@ -506,7 +507,10 @@ void WIFI::connectToWiFi(){
   } else {
     last_connection_state = false;
     wifi_disconnected_since_ms = millis();
-    DEBUG("Configured WiFi not reachable. Fallback AP will start after 10 minutes if WiFi is still unavailable.");
+    DEBUG("Configured WiFi not reachable. Starting fallback AP after initial connect attempt.");
+    if (!ap_active) {
+      startAccessPoint();
+    }
   }
 }
 
@@ -566,8 +570,7 @@ bool WIFI::canUseInternet(){
 void WIFI::startAccessPoint(){
   if (ap_active) return;
 
-  WiFi.mode(WIFI_AP_STA);  // AP local + STA pour continuer à chercher Tristan.
-  applyStationConfig();
+  WiFi.mode(WIFI_AP);  // AP only for stable fallback network.
 
   IPAddress ap_ip, ap_gateway, ap_subnet;
   ap_ip.fromString(WIFI_AP_IP);
@@ -581,11 +584,25 @@ void WIFI::startAccessPoint(){
     ap_ssid = "ESP32-AP";
   }
 
-  bool ok = WiFi.softAP(ap_ssid.c_str(), WIFI_AP_PASSWORD);
+  String ap_password = String(WIFI_AP_PASSWORD);
+  DEBUG(("Starting fallback AP: " + ap_ssid + " / PW: " + ap_password).c_str());
+
+  bool ok = WiFi.softAP(ap_ssid.c_str(), ap_password.c_str());
+  if (!ok) {
+    DEBUG("Fallback AP WPA2 failed, trying open AP without password.");
+    ok = WiFi.softAP(ap_ssid.c_str());
+  }
 
   if (ok) {
+    // Reapply AP config after the interface is active to ensure the gateway/IP are set.
+    WiFi.softAPConfig(ap_ip, ap_gateway, ap_subnet);
     ap_active = true;
-    DEBUG(("Fallback AP started: " + ap_ssid + " / IP: " + WiFi.softAPIP().toString()).c_str());
+    DEBUG(("Fallback AP started: " + ap_ssid + " / IP: " + WiFi.softAPIP().toString() + " / connected stations: " + String(WiFi.softAPgetStationNum())).c_str());
+    if (web_server_started) {
+      DEBUG("Web server already configured and ready for fallback AP");
+    } else {
+      DEBUG("Fallback AP started before web server setup");
+    }
   } else {
     DEBUG("Failed to start fallback AP");
   }
@@ -616,24 +633,51 @@ void WIFI::reconnect(){
     wifi_disconnected_since_ms = now_ms;
   }
 
-  if (!ap_active && (now_ms - wifi_disconnected_since_ms) >= WIFI_AP_START_DELAY_MS) {
-    DEBUG("WiFi unavailable for 10 minutes. Starting fallback AP.");
-    startAccessPoint();
+  if (ap_active) {
+    const int stationCount = WiFi.softAPgetStationNum();
+    DEBUG(("AP active, connected stations: " + String(stationCount)).c_str());
+    if (stationCount > 0) {
+      DEBUG("Fallback AP is active and has clients; skip STA probe to keep local network stable.");
+      return;
+    }
+
+    if ((now_ms - last_reconnect_attempt_ms) < WIFI_AP_SCAN_INTERVAL_MS) return;
+    last_reconnect_attempt_ms = now_ms;
+
+    DEBUG("Fallback AP active without clients; probing configured WiFi network without dropping AP.");
+    WiFi.mode(WIFI_AP_STA);
+    applyStationConfig();
+    WiFi.begin(ssid, password);
+
+    const uint32_t start_ms = millis();
+    while (WiFi.status() != WL_CONNECTED && (millis() - start_ms) < 5000) {
+      vTaskDelay(250 / portTICK_PERIOD_MS);
+    }
+
+    if (WiFi.status() == WL_CONNECTED) {
+      DEBUG(("Configured WiFi found while AP active. Stopping fallback AP and switching to STA. IP: " + WiFi.localIP().toString()).c_str());
+      wifi_disconnected_since_ms = 0;
+      stopAccessPoint();
+      return;
+    }
+
+    DEBUG("Configured WiFi still unavailable; keeping fallback AP active.");
+    return;
   }
 
   if ((now_ms - last_reconnect_attempt_ms) < WIFI_RECONNECT_INTERVAL_MS) return;
   last_reconnect_attempt_ms = now_ms;
 
+  if (!ap_active && (now_ms - wifi_disconnected_since_ms) >= WIFI_AP_START_DELAY_MS) {
+    DEBUG("WiFi unavailable for 10 seconds. Starting fallback AP.");
+    startAccessPoint();
+    return;
+  }
+
   DEBUG(("Searching configured WiFi SSID: " + String(ssid)).c_str());
 
-  // Avant les 10 minutes : mode STA uniquement.
-  // Après création du point d'accès : mode AP_STA.
-  if (ap_active) {
-    WiFi.mode(WIFI_AP_STA);
-  } else {
-    WiFi.softAPdisconnect(true);
-    WiFi.mode(WIFI_STA);
-  }
+  WiFi.softAPdisconnect(true);
+  WiFi.mode(WIFI_STA);
 
   applyStationConfig();
 
@@ -647,7 +691,7 @@ void WIFI::reconnect(){
   if (WiFi.status() == WL_CONNECTED) {
     DEBUG(("Reconnected. IP address: " + WiFi.localIP().toString()).c_str());
     wifi_disconnected_since_ms = 0;
-    stopAccessPoint();
+    //stopAccessPoint();
   } else {
     if (ap_active) {
       DEBUG("Configured WiFi still unavailable, keeping fallback AP active");

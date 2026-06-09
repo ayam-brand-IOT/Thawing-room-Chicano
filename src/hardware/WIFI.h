@@ -26,9 +26,12 @@
 
 // Access point fallback
 #define WIFI_AP_PASSWORD www_password
-#define WIFI_CONNECT_TIMEOUT_MS 15000
-#define WIFI_RECONNECT_INTERVAL_MS 10000
-#define WIFI_AP_START_DELAY_MS 600000  // 10 minutes
+
+// WiFi connection timing
+#define WIFI_CONNECT_TIMEOUT_MS 15000       // Maximum time to wait for a STA connection attempt
+#define WIFI_RECONNECT_INTERVAL_MS 10000    // Minimum interval between STA reconnect attempts when not in fallback AP
+#define WIFI_AP_SCAN_INTERVAL_MS 30000      // Interval between STA probe attempts while fallback AP is active and has no clients
+#define WIFI_AP_START_DELAY_MS 10000        // Wait time before starting fallback AP after STA disconnect
 
 #define WIFI_AP_IP "192.168.4.1"
 #define WIFI_AP_GATEWAY "192.168.4.1"
@@ -91,6 +94,7 @@ class WIFI {
 
     bool last_connection_state = false;
     bool ap_active = false;
+    bool web_server_started = false;
 
     uint32_t last_reconnect_attempt_ms = 0;
     uint32_t wifi_disconnected_since_ms = 0;

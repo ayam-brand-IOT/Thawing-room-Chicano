@@ -157,6 +157,7 @@ public:
     void connectToWiFi(bool web_server, bool web_serial, bool OTA); 
     void setUpWiFi(const char* ssid, const char* password, const char* hostname);
     int runConfigFile(char* ssid, char* password, char* hostname, char* ip_address, uint16_t* port, char* mqtt_id, char* username, char* mqtt_password, char* prefix_topic, char* static_ip);
+    bool reloadConfigFromSD();
     void setUpDefaultParameters(stage_parameters &stage1_params, stage_parameters &stage2_params, stage_parameters &stage3_params, room_parameters &room, data_tset &N_tset);
     bool updateDefaultParameters(stage_parameters &stage1_params, stage_parameters &stage2_params, stage_parameters &stage3_params, room_parameters &room, data_tset &N_tset);
 
