@@ -40,7 +40,9 @@ public:
     OutputType currentOutput;
     
     Logger();
-    void setupSD();
+    bool setupSD();
+    bool retrySD();
+    bool hasSD();
     void getSDInfo();
     String getFileName();
     void setFileName(DateTime now);

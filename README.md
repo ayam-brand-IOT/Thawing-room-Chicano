@@ -7,6 +7,11 @@ ESP32-based (Heltec WiFi LoRa 32 V3) automated thawing room controller.
 ## Table of Contents
 
 - [Hardware](#hardware)
+- [Configuration Storage (SPIFFS)](#configuration-storage-spiffs)
+  - [Atomic Writes & Backup](#atomic-writes--backup)
+  - [SD → SPIFFS Auto-Migration](#sd--spiffs-auto-migration)
+  - [Optional SD Card](#optional-sd-card)
+- [Access Point Config Portal](#access-point-config-portal)
 - [Reliability & Safety](#reliability--safety)
   - [Boot Cause Logging](#boot-cause-logging)
   - [Non-Blocking Stage Init](#non-blocking-stage-init)
@@ -29,9 +34,68 @@ ESP32-based (Heltec WiFi LoRa 32 V3) automated thawing room controller.
 |---|---|
 | MCU | ESP32-S3 (Heltec WiFi LoRa 32 V3) |
 | External RTC | DS3231 on dedicated `TwoWire(0)` bus (`I2C_SDA` / `I2C_SCL`) |
-| Storage | SD card (logs + config) |
+| Config storage | **SPIFFS** (internal flash) — `config.txt`, `defaultParameters.txt` |
+| Log storage | SD card (optional — device runs without it) |
 | Sensors | DS18B20 (Ta, Ts, Tc, Ti), optional MLX90614 IR (Ts), optional LoRa (Tc) |
 | Actuators | Fan F1 (fwd/rev), sprinkler valve S1, air damper, air PWM |
+
+---
+
+## Configuration Storage (SPIFFS)
+
+Defective SD cards were a recurring field failure. To remove that single point of failure, **all configuration now lives in SPIFFS** (the ESP32's internal flash) via the `ConfigStore` module. The SD card is used **only for logs** and is fully optional.
+
+| File | Location | Purpose |
+|---|---|---|
+| `config.txt` | SPIFFS | WiFi / MQTT / device settings |
+| `defaultParameters.txt` | SPIFFS | Stage timings, setpoints, target temps |
+| `/logs/*.txt` | SD card | Process logs (optional) |
+
+### Atomic Writes & Backup
+
+Every config write goes through a crash-safe sequence so a power loss mid-write can never corrupt the good file:
+
+```
+1. Write new content to "<file>.tmp"
+2. Validate it parses back as JSON      ──► fail ► abort, keep current file
+3. Rename current good file to "<file>.bak"
+4. Promote "<file>.tmp"  →  "<file>"
+```
+
+On **read**, if the primary file is missing or unparseable, `ConfigStore` automatically falls back to `<file>.bak` and restores it. If both are gone, `defaultParameters.txt` falls back to **compile-time embedded defaults** (`EMBEDDED_DEFAULT_PARAMS`) so the room always has valid parameters.
+
+### SD → SPIFFS Auto-Migration
+
+Already-deployed units have their config on the SD card. On boot, `ConfigStore::migrateFromSD()` copies each config file from SD → SPIFFS **only if** SPIFFS doesn't already have it and the SD does. This is idempotent and needs no field intervention — the first boot on this firmware migrates, every later boot is a no-op.
+
+### Optional SD Card
+
+`Logger::setupSD()` uses a **bounded** retry (3 attempts) instead of the old infinite loop. If no SD is present, the device logs a notice and keeps running; `writeSD()` and the `/logs` & `/download_log` web routes are guarded and return `503` rather than blocking. A background `retrySD()` hook can re-detect a card inserted later.
+
+---
+
+## Access Point Config Portal
+
+If the device can't get online, it becomes its own WiFi Access Point hosting the existing web UI so a technician can reconfigure it on site — **the room control loop keeps running the whole time** (stages, fans, sensors, sprinkler). The portal is for reconfiguration only; it never pauses the process.
+
+**Two boot-time triggers:**
+
+| Trigger | Condition |
+|---|---|
+| No config | `config.txt` not found / unparseable in SPIFFS (or `.bak`) |
+| WiFi failed | Station mode failed to connect after `AP_MAX_BOOT_WIFI_TRIES` (3) boot attempts |
+
+> The 3-attempt count reuses the existing EEPROM retry counter. The AP is a **boot-only** fallback: a WiFi drop *during* operation does **not** trigger AP — it just retries reconnecting in the background.
+
+**How it works:**
+
+```
+WiFi.softAP("ThawingRoom-<hostname>", AP_PASSWORD)   // WPA2
+DNSServer on port 53, "*" → AP IP                    // captive portal
+→ any URL redirects to /edit-config                  // page opens automatically
+```
+
+The AP SSID, WPA2 password (`AP_PASSWORD`), and trigger threshold are configured in [include/config.h](include/config.h). The captive DNS is serviced from the background task (`loopAP()` → `dnsServer.processNextRequest()`), independent of the control loop.
 
 ---
 
@@ -191,19 +255,21 @@ Served by `ESPAsyncWebServer` on port 80 with HTTP Basic Auth.
 | `/download_log?file=<name>` | GET | Download a log file from SD |
 | `/edit-config` | GET | Config file editor UI |
 | `/edit-settings` | GET | Parameters editor UI |
-| `/update-config` | POST | Save config / default parameters to SD |
-| `/replace-config` | POST | Upload and replace `config.txt` |
+| `/update-config` | POST | Save config / default parameters to SPIFFS (atomic) |
+| `/replace-config` | POST | Upload and replace `config.txt` (atomic) |
 | `/update` | POST | OTA firmware update |
 | `/reset` | POST | Restart ESP32 |
 | `/toggle-output` | GET | Toggle logger between Serial / WebSerial |
 
 > **Note on file downloads:** `ESPAsyncWebServer` closes the SD `File` handle automatically after the async transfer completes. Do **not** call `file.close()` after `request->send(file, ...)`.
 
+> **Note when no SD is present:** `/logs` and `/download_log` return `503`; all config routes still work since config lives in SPIFFS. In AP mode, any unknown URL redirects to `/edit-config` (captive portal).
+
 ---
 
 ## Configuration
 
-Stored on SD card at `/config.txt` (JSON format).
+Stored in **SPIFFS** at `/config.txt` (JSON format). See [Configuration Storage (SPIFFS)](#configuration-storage-spiffs) for the atomic-write and migration details.
 
 Key parameters:
 
@@ -216,7 +282,7 @@ Key parameters:
 | `IP_ADDRESS` | string | MQTT broker IP |
 | `PORT` | int | MQTT broker port |
 
-Default process parameters are stored separately in `/defaultParameters.txt`.
+Default process parameters are stored separately in `/defaultParameters.txt` (also in SPIFFS).
 
 ---
 
@@ -257,3 +323,10 @@ Chronological record of hardening changes made to this codebase.
 | 13 | `clearStage2Time()` called in `stopRoutine()` | Stale epoch used on next process cycle |
 | 14 | SD file download — removed premature `file.close()` | Large log files truncated during download |
 | 15 | Watchdog timer removed (reverts #10) | App-level `esp_task_wdt` no longer feeds the loop; reset cause still logged via `logResetReason()` |
+| 16 | Config moved SD → SPIFFS (`ConfigStore`) | Defective SD cards corrupted/lost configuration in the field |
+| 17 | Atomic config writes (`.tmp`→validate→`.bak`→promote) | Power loss mid-write corrupted the config file |
+| 18 | One-time SD → SPIFFS auto-migration on boot | Deployed units upgrade without manual config re-entry |
+| 19 | SD card made optional (bounded retry, guarded routes) | Missing/failed SD hung the boot in an infinite loop |
+| 20 | Embedded compile-time default parameters | Room had no parameters if every params file was lost |
+| 21 | AP config portal on no-config / 3 failed WiFi boots | Unconfigured or offline unit was unreachable on site |
+| 22 | Removed 3 infinite `while(true)` config/SD loops | Any missing file froze the entire firmware at boot |

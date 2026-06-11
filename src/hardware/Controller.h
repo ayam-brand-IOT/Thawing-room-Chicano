@@ -9,6 +9,7 @@
 #include "config.h"
 #include "Logger.h"
 #include <SPIFFS.h>
+#include "ConfigStore.h"
 #include <RTClib.h>
 #include <WiFiUdp.h>
 #include <Arduino.h>
@@ -152,9 +153,14 @@ public:
     bool refreshWiFiStatus();
     bool getConnectionStatus();
     // Puto el que lo lea
-    void connectToWiFi(bool web_server, bool web_serial, bool OTA); 
+    bool connectToWiFi(bool web_server, bool web_serial, bool OTA);
     void setUpWiFi(const char* ssid, const char* password, const char* hostname);
-    void runConfigFile(char* ssid, char* password, char* hostname, char* ip_address, uint16_t* port, char* mqtt_id, char* username, char* mqtt_password, char* prefix_topic, char* static_ip);
+    // Access Point / portal de configuración
+    void startConfigPortal();
+    bool isAPMode();
+    void loopAP();
+    // Devuelve true si la configuración se cargó; false si no hay config.txt usable.
+    bool runConfigFile(char* ssid, char* password, char* hostname, char* ip_address, uint16_t* port, char* mqtt_id, char* username, char* mqtt_password, char* prefix_topic, char* static_ip);
     void setUpDefaultParameters(stage_parameters &stage1_params, stage_parameters &stage2_params, stage_parameters &stage3_params, room_parameters &room, data_tset &N_tset);
     void updateDefaultParameters(stage_parameters &stage1_params, stage_parameters &stage2_params, stage_parameters &stage3_params, room_parameters &room, data_tset &N_tset);
 
@@ -164,40 +170,30 @@ public:
     bool hasIRSensor();
     // void DEBUG(String message);
 
-    template <typename T> 
-    bool updateConfigJson(const char* param, T value, String file = "/config.txt"){
-        // Abre el archivo de configuración existente
-        File configFile = SD.open(file, FILE_READ);
-        if (!configFile) {
-            DEBUG("Error al abrir el archivo de configuración para lectura");
-            return false;
+    template <typename T>
+    bool updateConfigJson(const char* param, T value, const char* file = CONFIG_FILE){
+        // Lee desde SPIFFS (con fallback a .bak)
+        const String content = ConfigStore::read(file);
+
+        StaticJsonDocument<1024> doc;
+        if (content.length()) {
+            auto error = deserializeJson(doc, content);
+            if (error) {
+                DEBUG("Error al parsear el archivo de configuración");
+                return false;
+            }
         }
 
-        // Parsea el objeto JSON del archivo
-        StaticJsonDocument<1024> doc; // Cambiado a StaticJsonDocument
-        auto error = deserializeJson(doc, configFile);
-        if (error) {
-            Serial.println("Error al parsear el archivo de configuración");
-            return false;
-        }
-
-        // Update the values
+        // Actualiza el valor
         doc[param] = value;
 
-        // Open file for writing
-        configFile = SD.open(file, FILE_WRITE);
-        if (!configFile) {
-            DEBUG("Error al abrir el archivo de configuración para escritura");
-            return false;
-        }
-
-        // Serializa el JSON al archivo
-        if (serializeJson(doc, configFile) == 0) {
+        // Persiste atómicamente en SPIFFS (.tmp -> validar -> .bak -> promover)
+        String out;
+        serializeJson(doc, out);
+        if (!ConfigStore::write(file, out)) {
             DEBUG("Error al escribir en el archivo de configuración");
             return false;
         }
-
-        configFile.close();
         return true;
     }
 

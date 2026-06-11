@@ -102,13 +102,17 @@ void logResetReason() {
 
 void backgroundTasks(void* pvParameters) {
   for (;;) {
-    controller.WiFiLoop();
-    
-    if(controller.isWiFiConnected()) {
-      controller.loopOTA();
+    if (controller.isAPMode()) {
+      // En modo portal: atender el DNS cautivo. No intentar reconectar STA.
+      controller.loopAP();
+    } else {
+      controller.WiFiLoop();
+      if(controller.isWiFiConnected()) {
+        controller.loopOTA();
+      }
     }
     // printStackUsage(); // Monitorea el uso de la pila
-    vTaskDelay(100 / portTICK_PERIOD_MS);
+    vTaskDelay(50 / portTICK_PERIOD_MS);
   }
 }
 
@@ -116,18 +120,19 @@ void backgroundTasks(void* pvParameters) {
 void setup() {
   controller.init();
 
-  char SSID[SSID_SIZE];
-  char PASS[PASSWORD_SIZE];
-  char HOST_NAME[HOSTNAME_SIZE];
-  char IP_ADDRESS[IP_ADDRESS_SIZE];
-  char STATIC_IP[IP_ADDRESS_SIZE];
-  uint16_t PORT;
-  char MQTT_ID[MQTT_ID_SIZE];
-  char USERNAME[MQTT_USERNAME_SIZE];
-  char MQTT_PASSWORD[MQTT_PASSWORD_SIZE];
-  char PREFIX_TOPIC[PREFIX_SIZE];
+  // Defaults por si no hay config.txt: el equipo igual arranca y levanta su portal AP.
+  char SSID[SSID_SIZE] = "";
+  char PASS[PASSWORD_SIZE] = "";
+  char HOST_NAME[HOSTNAME_SIZE] = "thawingroom";
+  char IP_ADDRESS[IP_ADDRESS_SIZE] = "";
+  char STATIC_IP[IP_ADDRESS_SIZE] = "";
+  uint16_t PORT = 1883;
+  char MQTT_ID[MQTT_ID_SIZE] = "";
+  char USERNAME[MQTT_USERNAME_SIZE] = "";
+  char MQTT_PASSWORD[MQTT_PASSWORD_SIZE] = "";
+  char PREFIX_TOPIC[PREFIX_SIZE] = "";
 
-  controller.runConfigFile(SSID, PASS, HOST_NAME, IP_ADDRESS, &PORT, MQTT_ID, USERNAME, MQTT_PASSWORD, PREFIX_TOPIC, STATIC_IP);
+  const bool config_ok = controller.runConfigFile(SSID, PASS, HOST_NAME, IP_ADDRESS, &PORT, MQTT_ID, USERNAME, MQTT_PASSWORD, PREFIX_TOPIC, STATIC_IP);
   controller.setUpDefaultParameters(stage1_params, stage2_params, stage3_params, room, temp_set);
 
   start_btn.begin();
@@ -135,7 +140,20 @@ void setup() {
   d_start_button.begin();
 
   controller.setUpWiFi(SSID, PASS, HOST_NAME);
-  controller.connectToWiFi(/* web_server */ true, /* web_serial */ true, /* OTA */ true);
+
+  if (!config_ok) {
+    // Sin config.txt no hay credenciales que probar: portal de configuración directo.
+    // startConfigPortal levanta el AP y registra el servidor web.
+    logger.println(F("No config - starting AP config portal"));
+    controller.startConfigPortal();
+  } else {
+    const bool connected = controller.connectToWiFi(/* web_server */ true, /* web_serial */ true, /* OTA */ true);
+    if (!connected) {
+      // 3 reinicios sin lograr WiFi -> portal AP. El control de la sala sigue operando.
+      logger.println(F("WiFi failed on boot - starting AP config portal"));
+      controller.startConfigPortal();
+    }
+  }
   controller.setUpRTC();
 
   runner.init();

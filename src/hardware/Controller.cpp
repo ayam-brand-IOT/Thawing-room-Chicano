@@ -29,7 +29,18 @@ Controller::~Controller() {
 void Controller::init() {
   setUpI2C();
   setUpIOS();
-  logger.setupSD();
+  const bool sd_ok = logger.setupSD();
+
+  // Configuración crítica vive en SPIFFS (memoria interna), no en la SD.
+  ConfigStore::begin();
+
+  // Migración única SD -> SPIFFS para equipos ya desplegados: solo copia los
+  // archivos si SPIFFS aún no los tiene y la SD sí. Idempotente en cada arranque.
+  if (sd_ok) {
+    const bool m1 = ConfigStore::migrateFromSD(CONFIG_FILE);
+    const bool m2 = ConfigStore::migrateFromSD(DEFAULT_PARAMS_FILE);
+    if (m1 || m2) DEBUG("Config migrated from SD to SPIFFS");
+  }
 }
 
 void Controller::setUpLogger() {
@@ -338,10 +349,23 @@ float Controller::readTempFrom(uint8_t channel) {
 
 // WIFI CLASS
 
-void Controller::connectToWiFi(bool web_server, bool web_serial, bool OTA) {
-  wifi.connectToWiFi();
-  if(OTA) wifi.setUpOTA();
-  if(web_server) wifi.setUpWebServer(web_serial);
+bool Controller::connectToWiFi(bool web_server, bool web_serial, bool OTA) {
+  const bool connected = wifi.connectToWiFi();
+  if(OTA && connected) wifi.setUpOTA();
+  if(web_server) wifi.setUpWebServer(web_serial);   // servidor web disponible aun sin WiFi (para AP)
+  return connected;
+}
+
+void Controller::startConfigPortal() {
+  wifi.startAccessPoint();
+}
+
+bool Controller::isAPMode() {
+  return wifi.isAPMode();
+}
+
+void Controller::loopAP() {
+  wifi.loopAP();
 }
 
 void Controller::reconnectWiFi() {
@@ -386,20 +410,12 @@ void Controller::setUpWiFi(const char* ssid, const char* password, const char* h
 }
 
 void Controller::updateDefaultParameters(stage_parameters &stage1_params, stage_parameters &stage2_params, stage_parameters &stage3_params, room_parameters &room, data_tset &N_tset ){
-  // Abre el archivo de configuración existente
-  // File configFile = SPIFFS.open("/defaultParameters.txt", FILE_READ);
-  File configFile = SD.open("/defaultParameters.txt", FILE_READ);
-  if (!configFile) {
-        DEBUG("Error al abrir el archivo de configuración para lectura");
-    return;
-  }
-
-  // Lee el contenido en una cadena
-  String content = configFile.readString();
-  configFile.close();
+  // Lee la config actual desde SPIFFS (fallback a .bak); si no hay nada, parte de los embebidos
+  String content = ConfigStore::read(DEFAULT_PARAMS_FILE);
+  if (content.length() == 0) content = EMBEDDED_DEFAULT_PARAMS;
 
   // Parsea el objeto JSON del archivo
-  StaticJsonDocument<1024> doc; // Cambiado a StaticJsonDocument
+  StaticJsonDocument<1024> doc;
   auto error = deserializeJson(doc, content);
   if (error) {
     Serial.println("Error al parsear el archivo de configuración");
@@ -432,50 +448,30 @@ void Controller::updateDefaultParameters(stage_parameters &stage1_params, stage_
   doc["tset"]["tsSet"] = N_tset.ts;
   doc["tset"]["tcSet"] = N_tset.tc;
 
-  // Open file for writing
-  configFile = SD.open("/defaultParameters.txt", FILE_WRITE);
-  if (!configFile) {
-    DEBUG("Error al abrir el archivo de configuración para escritura");
-    return;
-  }
-
-  // Serializa el JSON al archivo
-  if (serializeJson(doc, configFile) == 0) {
+  // Persiste atómicamente en SPIFFS
+  String out;
+  serializeJson(doc, out);
+  if (!ConfigStore::write(DEFAULT_PARAMS_FILE, out)) {
     DEBUG("Error al escribir en el archivo de configuración");
   }
-
-  configFile.close();
 }
 
-void Controller::runConfigFile(char* ssid, char* password, char* hostname, char* ip_address, uint16_t* port, char* mqtt_id, char* username, char* mqtt_password, char* prefix_topic, char* static_ip) {
-  // Iniciar SPIFFS
-  // if (!SPIFFS.begin(true)) {
-  //   DEBUG("An error has occurred while mounting SPIFFS");
-  //   return;
-  // }
-
-  // Leer archivo de configuración
-  File file = SD.open(CONFIG_FILE);
-  if (!file) {
-    while (true){
-      DEBUG("Failed to open config file");
-      delay(1000);
-    }
-    // Pending What to do if the file is not found
-    return;
+bool Controller::runConfigFile(char* ssid, char* password, char* hostname, char* ip_address, uint16_t* port, char* mqtt_id, char* username, char* mqtt_password, char* prefix_topic, char* static_ip) {
+  // Leer archivo de configuración desde SPIFFS (con fallback a .bak).
+  // Si no hay config usable, devolver false: el caller levantará el portal AP.
+  const String content = ConfigStore::read(CONFIG_FILE);
+  if (content.length() == 0) {
+    DEBUG("No config file found - signaling AP/portal fallback");
+    ERROR(NO_CONFIG_FILE);
+    return false;
   }
 
-  // Tamaño para el documento JSON
-  size_t size = file.size();
-  std::unique_ptr<char[]> buf(new char[size]);
-  file.readBytes(buf.get(), size);
-  file.close();
-
   DynamicJsonDocument doc(1024);
-  DeserializationError error = deserializeJson(doc, buf.get());
+  DeserializationError error = deserializeJson(doc, content);
   if (error) {
-      DEBUG("Failed to parse config file");
-    return;
+    DEBUG("Failed to parse config file");
+    ERROR(NO_CONFIG_FILE);
+    return false;
   }
 
   // Asignar valores y verificar si están presentes en el JSON
@@ -512,21 +508,20 @@ void Controller::runConfigFile(char* ssid, char* password, char* hostname, char*
   DEBUG(("MQTT_ID: " + String(mqtt_id)).c_str());
   DEBUG(("MQTT_PASSWORD: " + String(mqtt_password)).c_str());
 
+  return true;
 }
 
 void Controller::setUpDefaultParameters(stage_parameters &stage1_params, stage_parameters &stage2_params, stage_parameters &stage3_params, room_parameters &room, data_tset &N_tset){
-  File file = SD.open("/defaultParameters.txt", "r");
-  if (!file) {
-    while (true){
-      DEBUG("Failed to open default parameters file");
-      delay(1000);
-    }
-    
-    return;
+  // Lee desde SPIFFS (fallback a .bak). Último recurso: parámetros embebidos en firmware,
+  // así la sala siempre tiene parámetros válidos aunque falten todos los archivos.
+  String jsonText = ConfigStore::read(DEFAULT_PARAMS_FILE);
+  if (jsonText.length() == 0) {
+    DEBUG("No default parameters file - using embedded fallback");
+    ERROR(NO_DEFAULT_PARAMS);
+    jsonText = EMBEDDED_DEFAULT_PARAMS;
+    // Sembrar SPIFFS para próximos arranques
+    ConfigStore::write(DEFAULT_PARAMS_FILE, jsonText);
   }
-
-  String jsonText = file.readString();
-  file.close();
 
   // Parsea el JSON
   StaticJsonDocument<1024> doc;
