@@ -8,7 +8,7 @@ ESP32-based (Heltec WiFi LoRa 32 V3) automated thawing room controller.
 
 - [Hardware](#hardware)
 - [Reliability & Safety](#reliability--safety)
-  - [Watchdog Timer](#watchdog-timer)
+  - [Boot Cause Logging](#boot-cause-logging)
   - [Non-Blocking Stage Init](#non-blocking-stage-init)
   - [Safe Actuator State on Boot](#safe-actuator-state-on-boot)
 - [RTC Architecture](#rtc-architecture)
@@ -39,32 +39,19 @@ ESP32-based (Heltec WiFi LoRa 32 V3) automated thawing room controller.
 
 This is an industrial machine. The firmware is designed so that **the process never stops unexpectedly** and any failure is handled gracefully.
 
-### Watchdog Timer
+### Boot Cause Logging
 
-A hardware watchdog (`esp_task_wdt`) monitors the main loop. If the loop freezes for more than **5 minutes** — due to a stuck I2C bus, SD deadlock, or any other cause — the ESP32 reboots automatically.
-
-```
-loop() called every iteration
-  │
-  └─ esp_task_wdt_reset()  ← "I am alive"
-
-If not called for 5 minutes:
-  └─ WDT fires → ESP32 reboots → setup() runs → actuators initialize to OFF
-```
-
-**Why 5 minutes and not 30 seconds:**  
-Legitimate slow operations (NTP sync, SD write, OTA update) can take several seconds. A 5-minute timeout ensures the WDT only fires on actual hangs, not on normal slow operations.
-
-**Boot cause logging:**  
-Every time the system starts, `logResetReason()` writes the cause to the SD log:
+Every time the system starts, `logResetReason()` reads the ESP32 reset reason (`esp_reset_reason()`) and writes the cause to the SD log. This gives visibility into *why* the device restarted — power cycle, planned reboot, crash, or a system-level fault:
 
 | Cause | Log message |
 |---|---|
 | Normal power-on | `[BOOT] Power-on reset` |
 | `ESP.restart()` | `[BOOT] Software restart` |
 | Panic / crash | `[CRITICAL] Reset by panic / crash` |
-| Watchdog timeout | `[CRITICAL] Reset by task WDT` |
+| Interrupt / task WDT (system level) | `[CRITICAL] Reset by interrupt WDT` / `[CRITICAL] Reset by task WDT` |
 | Brownout (low voltage) | `[CRITICAL] Reset by brownout` |
+
+> **Note:** these WDT causes are reported by the ESP-IDF/hardware reset reason. The firmware does **not** currently run an application-level `esp_task_wdt` feeding the main loop — an earlier 5-minute software watchdog was removed (see [Stability Improvements Log](#stability-improvements-log)).
 
 ### Non-Blocking Stage Init
 
@@ -223,7 +210,7 @@ Key parameters:
 | Key | Type | Description |
 |---|---|---|
 | `SSID` | string | WiFi network name |
-| `PASSWORD` | string | WiFi password |
+| `WIFI_PASSWORD` | string | WiFi password |
 | `TIME_ZONE_OFFSET_HRS` | int | Local timezone offset from UTC (e.g. `8` for UTC+8) |
 | `HOST_NAME` | string | mDNS hostname (`<name>.local`) |
 | `IP_ADDRESS` | string | MQTT broker IP |
@@ -245,7 +232,7 @@ Uses [TaskScheduler](https://github.com/arkhipenko/TaskScheduler) library.
 | `turn_on_flush` | one-shot | Turn on flush valve |
 | `turn_off_flush` | one-shot (20 ms delay) | Turn off flush valve |
 
-All tasks are registered and enabled in `setup()`. The watchdog is reset at the top of every `loop()` call before `runner.execute()`.
+All tasks are registered and enabled in `setup()`. Every `loop()` call runs `runner.execute()` to service the scheduler.
 
 ---
 
@@ -269,3 +256,4 @@ Chronological record of hardening changes made to this codebase.
 | 12 | All GPIOs driven LOW in `setUpDigitalOutputs()` | Undefined actuator state after reboot |
 | 13 | `clearStage2Time()` called in `stopRoutine()` | Stale epoch used on next process cycle |
 | 14 | SD file download — removed premature `file.close()` | Large log files truncated during download |
+| 15 | Watchdog timer removed (reverts #10) | App-level `esp_task_wdt` no longer feeds the loop; reset cause still logged via `logResetReason()` |
