@@ -1,0 +1,8 @@
+# Claves privadas: NUNCA versionar
+*.key
+*.srl
+server.csr
+
+# El CA público (ca.crt) y el cert de servidor (server.crt) sí se pueden versionar,
+# pero por defecto ignoramos server.crt porque es específico de cada despliegue.
+server.crt

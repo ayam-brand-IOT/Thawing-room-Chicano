@@ -141,14 +141,17 @@ void setup() {
 
   controller.setUpWiFi(SSID, PASS, HOST_NAME);
 
+  // online = hay config válida Y WiFi conectado (modo estación). En modo AP/portal
+  // queda false: sin red ni broker no tiene sentido intentar MQTT.
+  bool online = false;
   if (!config_ok) {
     // Sin config.txt no hay credenciales que probar: portal de configuración directo.
     // startConfigPortal levanta el AP y registra el servidor web.
     logger.println(F("No config - starting AP config portal"));
     controller.startConfigPortal();
   } else {
-    const bool connected = controller.connectToWiFi(/* web_server */ true, /* web_serial */ true, /* OTA */ true);
-    if (!connected) {
+    online = controller.connectToWiFi(/* web_server */ true, /* web_serial */ true, /* OTA */ true);
+    if (!online) {
       // 3 reinicios sin lograr WiFi -> portal AP. El control de la sala sigue operando.
       logger.println(F("WiFi failed on boot - starting AP config portal"));
       controller.startConfigPortal();
@@ -181,9 +184,27 @@ void setup() {
   logger.println(stateBuffer);
   if (last_state.stage != IDLE) currentState = last_state;
 
-  mqtt.setCallback(callback);
-  mqtt.onConnect(onMQTTConnect);
-  mqtt.connect(IP_ADDRESS, PORT, MQTT_ID, USERNAME, MQTT_PASSWORD);
+  // Solo levantar MQTT si estamos online (estación con WiFi). En modo AP/portal
+  // IP_ADDRESS puede estar vacío y no hay red: intentar conectar sería un gasto inútil
+  // (con TLS además se cuelga ~30s en el handshake hacia un host inalcanzable).
+  if (online) {
+    mqtt.setCallback(callback);
+    mqtt.onConnect(onMQTTConnect);
+    mqtt.setTLS(controller.isTLSEnabled());  // verifica el broker contra el CA embebido (mqtt_certs.h)
+
+    // TLS valida la vigencia del certificado contra el reloj del sistema. No basta con
+    // que el RTC dé una fecha "razonable": si está atrasada respecto al notBefore del
+    // cert, el handshake falla con -9984. Por eso, igual que el sketch de referencia,
+    // forzamos una sync NTP fresca ANTES de conectar siempre que haya WiFi.
+    if (controller.isTLSEnabled() && controller.isWiFiConnected()) {
+      logger.println(F("TLS: sincronizando hora por NTP antes de conectar MQTT"));
+      controller.forceNTPSync();
+    }
+
+    mqtt.connect(IP_ADDRESS, PORT, MQTT_ID, USERNAME, MQTT_PASSWORD);
+  } else {
+    logger.println(F("AP/offline mode - skipping MQTT connect"));
+  }
 
   xTaskCreatePinnedToCore(backgroundTasks, "communicationTask", 20000, NULL, 1, &communicationTask, 0);
 

@@ -57,6 +57,7 @@ private:
     bool fan_state = false;
     int ARRAY_SIZE = 7;
     bool ir_ts = false;
+    bool use_tls = true;  // TLS activo por defecto; poner "USE_TLS": false en config.txt para desactivar
     bool lora_tc = false;
     bool ir_sensor_ready = false;
     bool ir_sensor_attempted = false;
@@ -121,6 +122,8 @@ public:
     void setUpRTC();
     void forceNTPSync();   // llamado por TaskScheduler cada 24hrs
     bool isLoraTc();
+    // ¿La config pide TLS para MQTT? (clave USE_TLS en config.txt). Default false.
+    bool isTLSEnabled() const { return use_tls; }
     // Stage2 scheduling
     void saveStage2StartTime(uint8_t hour, uint8_t minute, uint8_t day, uint8_t month);
     void loadStage2StartTime();

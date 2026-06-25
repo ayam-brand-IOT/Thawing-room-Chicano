@@ -1,6 +1,6 @@
 #ifndef MY_WIFI_H
 #define MY_WIFI_H
-#include "EEPROM.h"
+#include <Preferences.h>
 #include <Update.h>
 #include <SPIFFS.h>
 #include "config.h"
@@ -28,11 +28,6 @@
 #define ERR_LOST_CONNECTION "Lost connection"
 
 
-#ifdef WebSerial
-  // No incluir WebSerialLite.h
-#else
-  #include "WebSerialLite.h"
-#endif
 #include "ESPAsyncWebServer.h"
 
 

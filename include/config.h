@@ -53,8 +53,8 @@
 #define MIN_OFFTIME_STAGE2 0.5
 #define MIN_OFFTIME_STAGE3 0.5
 
-// #define TIME_ZONE_OFFSET_HRS            (-7)  /* Ensenada, México */
-#define TIME_ZONE_OFFSET_HRS            (+8)   /* Taiping, Malaysia */
+#define TIME_ZONE_OFFSET_HRS            (-7)  /* Ensenada, México */
+// #define TIME_ZONE_OFFSET_HRS            (+8)   /* Taiping, Malaysia */
 
 // DeviceAddress ADDRESS_TA = { 0x28, 0x8C, 0x4B, 0xAD, 0x27, 0x19, 0x01, 0xCA }; // Ta
 // // DeviceAddress ADDRESS_TC1 = { 0x28, 0xA7, 0x93, 0x8B, 0x0B, 0x00, 0x00, 0xB2 }; // Ta
@@ -79,7 +79,7 @@
 // ------------ Embedded fallback parameters -------------------------------->
 // Último recurso si no hay defaultParameters.txt ni en SPIFFS ni en SD ni en .bak.
 // Mantener en sintonía con data/defaultParameters.txt.
-#define EMBEDDED_DEFAULT_PARAMS "{\"stage1\":{\"f1Ontime\":\"1\",\"f1Offtime\":\"1\",\"s1Ontime\":\"0.5\",\"s1Offtime\":\"1\"},\"stage2\":{\"f1Ontime\":\"1\",\"f1Offtime\":\"1\",\"s1Ontime\":\"1\",\"s1Offtime\":\"1\"},\"stage3\":{\"f1Ontime\":\"10\",\"f1Offtime\":\"30\",\"s1Ontime\":\"1\",\"s1Offtime\":\"15\"},\"setPoint\":{\"A\":\"0.5\",\"B\":\"20\"},\"tset\":{\"tsSet\":\"21\",\"tcSet\":\"21\"}}"
+#define EMBEDDED_DEFAULT_PARAMS "{\"stage1\":{\"f1Ontime\":\"1\",\"f1RevOntime\":\"1\",\"f1Offtime\":\"1\",\"s1Ontime\":\"0.5\",\"s1Offtime\":\"1\"},\"stage2\":{\"f1Ontime\":\"1\",\"f1RevOntime\":\"1\",\"f1Offtime\":\"1\",\"s1Ontime\":\"1\",\"s1Offtime\":\"1\"},\"stage3\":{\"f1Ontime\":\"10\",\"f1RevOntime\":\"1\",\"f1Offtime\":\"30\",\"s1Ontime\":\"1\",\"s1Offtime\":\"15\"},\"setPoint\":{\"A\":\"0.5\",\"B\":\"20\"},\"tset\":{\"tsSet\":\"21\",\"tcSet\":\"21\"}}"
 
 
 #endif

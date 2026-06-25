@@ -10,11 +10,9 @@
 #define MISO  37                //MOSI on SPI3
 #define SS    38
 
-// #ifdef WebSerial
-//   // No incluir WebSerialLite.h
-// #else
-  #include "WebSerialLite.h"
-// #endif
+// WebSerial eliminado en la migración a arduino-esp32 3.x (WebSerialLite no es
+// compatible con IDF5). El logger va siempre a Serial; la opción WEBSERIAL del
+// enum se mantiene por compatibilidad de API pero rutea a Serial.
 
 #define DEFAULT_LOG_FILE "/log.txt"
 #define LOG_FOLDER_PATH "/logs"

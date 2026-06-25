@@ -62,7 +62,7 @@ void Logger::print(const String &message) {
     if (currentOutput == HW_SERIAL) {
         Serial.print(message);
     } else {
-        WebSerial.print(message);
+        Serial.print(message);
     }
 }
 
@@ -70,21 +70,21 @@ void Logger::println(const String &message) {
     if (currentOutput == HW_SERIAL) {
         Serial.println(message);
     } else {
-        WebSerial.println(message);
+        Serial.println(message);
     }
 }
 
 void Logger::printError(uint8_t errorType) {
     const String message = errorMessages[errorType];
     if (currentOutput == WEBSERIAL) {
-        WebSerial.println("[ERROR -> LOGGER]: " + message);
+        Serial.println("[ERROR -> LOGGER]: " + message);
     } 
     Serial.println("[ERROR -> LOGGER]: " + message);
 }
 
 void Logger::printError(const String &message) {
     if (currentOutput == WEBSERIAL) {
-        WebSerial.println("[ERROR " + message);
+        Serial.println("[ERROR " + message);
     } 
     Serial.println("[ERROR " + message);
 }
@@ -93,7 +93,7 @@ void Logger::printValue(const String &key, const String &value) {
     if (currentOutput == HW_SERIAL) {
         Serial.println(key + ": " + value);
     } else {
-        WebSerial.println(key + ": " + value);
+        Serial.println(key + ": " + value);
     }
 }
 
@@ -106,7 +106,7 @@ void Logger::printTime(const String &prefix, int hour, int minute, int day, int 
     if (currentOutput == HW_SERIAL) {
         Serial.println(timeStr);
     } else {
-        WebSerial.println(timeStr);
+        Serial.println(timeStr);
     }
 }
 

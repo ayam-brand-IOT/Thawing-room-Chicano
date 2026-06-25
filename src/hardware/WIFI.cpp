@@ -41,16 +41,6 @@ static void handle_update_progress_cb(AsyncWebServerRequest *request, String fil
   };
 
 
-/* Message callback of WebSerial */
-static void recvMsg(uint8_t *data, size_t len){
-  WebSerial.println("Received Data...");
-  String d = "";
-  for(int i=0; i < len; i++){
-    d += char(data[i]);
-  }
-  WebSerial.println(d);
-}
-
 String WIFI::generateHTMLForJson(JsonVariant json, String path) {
     String html = "";
     if (json.is<JsonObject>()) {
@@ -391,7 +381,7 @@ void WIFI::setUpWebServer(bool brigeSerial){
 
     int params = request->params();
     for (int i = 0; i < params; i++) {
-      AsyncWebParameter* p = request->getParam(i);
+      const AsyncWebParameter* p = request->getParam(i);
       String keyPath = p->name();
       // logger.println(keyPath + ": " + p->value());
       ssidExists = ssidExists || keyPath == "SSID";
@@ -443,10 +433,8 @@ void WIFI::setUpWebServer(bool brigeSerial){
   });
 
   
-  if (brigeSerial) {
-    WebSerial.begin(&server);
-    WebSerial.onMessage(recvMsg);
-  }
+  // WebSerial eliminado en la migración a arduino-esp32 3.x.
+  (void)brigeSerial;
   server.begin();
   web_server_started = true;
 }
@@ -467,33 +455,35 @@ bool WIFI::connectToWiFi(){
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   uint32_t notConnectedCounter = 0;
-  EEPROM.begin(32);
+  // Contador de reinicios por WiFi fallido persistido en NVS vía Preferences
+  // (antes EEPROM). Es un valor transitorio: si se pierde, vuelve a 0, que es
+  // el default seguro. Namespace "wifi", clave "bootTries".
+  Preferences prefs;
   while (WiFi.status() != WL_CONNECTED) {
     vTaskDelay(2000 / portTICK_PERIOD_MS);
     DEBUG("Wifi connecting...");
 
     notConnectedCounter++;
     if(notConnectedCounter > 7) { // ~16s sin conectar en este arranque
-      const uint8_t num_of_tries = EEPROM.readInt(1);
+      prefs.begin("wifi", false);
+      const uint32_t num_of_tries = prefs.getUInt("bootTries", 0);
       // Tras AP_MAX_BOOT_WIFI_TRIES reinicios fallidos, rendirse y caer a modo AP.
       if (num_of_tries >= AP_MAX_BOOT_WIFI_TRIES) {
         DEBUG("WiFi failed after max boot tries - falling back to AP mode");
-        EEPROM.writeInt(1, 0);   // resetear el contador para el próximo arranque manual
-        EEPROM.commit();
-        EEPROM.end();
+        prefs.putUInt("bootTries", 0);   // resetear el contador para el próximo arranque manual
+        prefs.end();
         return false;
       }
       DEBUG("Resetting due to Wifi not connecting...");
-      EEPROM.writeInt(1, num_of_tries + 1);
-      EEPROM.commit();
-      EEPROM.end();
+      prefs.putUInt("bootTries", num_of_tries + 1);
+      prefs.end();
       ESP.restart();
     }
   }
 
-  EEPROM.writeInt(1, 0);
-  EEPROM.commit();
-  EEPROM.end();
+  prefs.begin("wifi", false);
+  prefs.putUInt("bootTries", 0);
+  prefs.end();
 
   DEBUG(("IP address: " + WiFi.localIP().toString()).c_str());
   return true;

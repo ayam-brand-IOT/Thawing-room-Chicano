@@ -43,6 +43,11 @@ public:
 private:
     static bool isValidJson(const String& data);
     static String readRaw(const char* path);
+
+    // Mutex recursivo que serializa read()/write() entre cores: los handlers del
+    // AsyncWebServer (otra task) escriben SPIFFS mientras loop()/backgroundTasks
+    // leen. Recursivo porque read() puede llamar a write() (restaurar el .bak).
+    static SemaphoreHandle_t mutex;
 };
 
 #endif // CONFIG_STORE_H

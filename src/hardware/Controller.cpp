@@ -65,8 +65,9 @@ void Controller::setUpIOS() {
 
 
 void Controller::setUpAnalogOutputs() {
-  ledcSetup(AIR_PWM, FREQ, RESOLUTION);
-  ledcAttachPin(AIR_PIN, AIR_PWM);
+  // arduino-esp32 3.x: LEDC es por pin (ya no por canal). ledcAttach reemplaza
+  // a ledcSetup + ledcAttachPin.
+  ledcAttach(AIR_PIN, FREQ, RESOLUTION);
 }
 
 void Controller::setUpDigitalOutputs() {
@@ -331,7 +332,8 @@ bool Controller::readDigitalInput(uint8_t input) {
 }
 
 void Controller::writeAnalogOutput(uint8_t output, uint8_t value) {
-  ledcWrite(AIR_PWM, value);
+  // arduino-esp32 3.x: ledcWrite recibe el PIN, no el canal.
+  ledcWrite(AIR_PIN, value);
 }
 
 void Controller::writeDigitalOutput(uint8_t output, uint8_t value) {
@@ -424,18 +426,18 @@ void Controller::updateDefaultParameters(stage_parameters &stage1_params, stage_
 
   // Update the values
   doc["stage1"]["f1Ontime"] = stage1_params.fanOnTime;
-  doc["stage1"]["f1RevONTime"] = stage1_params.fanRevONTime;
+  doc["stage1"]["f1RevOntime"] = stage1_params.fanRevONTime;
   doc["stage1"]["f1Offtime"] = stage1_params.fanOffTime;
 
   doc["stage2"]["f1Ontime"] = stage2_params.fanOnTime;
-  doc["stage2"]["f1RevONTime"] = stage2_params.fanRevONTime;
+  doc["stage2"]["f1RevOntime"] = stage2_params.fanRevONTime;
   doc["stage2"]["f1Offtime"] = stage2_params.fanOffTime;
 
   doc["stage2"]["s1Ontime"] = stage2_params.sprinklerOnTime;
   doc["stage2"]["s1Offtime"] = stage2_params.sprinklerOffTime;
 
   doc["stage3"]["f1Ontime"] = stage3_params.fanOnTime;
-  doc["stage3"]["f1RevONTime"] = stage3_params.fanRevONTime;
+  doc["stage3"]["f1RevOntime"] = stage3_params.fanRevONTime;
   doc["stage3"]["f1Offtime"] = stage3_params.fanOffTime;
   doc["stage3"]["s1Ontime"] = stage3_params.sprinklerOnTime;
   doc["stage3"]["s1Offtime"] = stage3_params.sprinklerOffTime;
@@ -486,6 +488,7 @@ bool Controller::runConfigFile(char* ssid, char* password, char* hostname, char*
     wifi.setStaticIP(ip, gateway);
   } 
   if (doc.containsKey("PORT")) *port = doc["PORT"];
+  if (doc.containsKey("USE_TLS")) use_tls = doc["USE_TLS"];
   if (doc.containsKey("USERNAME")) strlcpy(username, doc["USERNAME"], HOSTNAME_SIZE);
   // if (doc.containsKey("TOPIC")) strlcpy(prefix_topic, doc["TOPIC"], HOSTNAME_SIZE);
   if (doc.containsKey("MQTT_ID")) strlcpy(mqtt_id, doc["MQTT_ID"], MQTT_ID_SIZE);
@@ -503,6 +506,7 @@ bool Controller::runConfigFile(char* ssid, char* password, char* hostname, char*
   DEBUG(("HOST_NAME: " + String(hostname)).c_str());
   DEBUG(("IP_ADDRESS: " + String(ip_address)).c_str());
   DEBUG(("PORT: " + String(*port)).c_str());
+  DEBUG(("USE_TLS: " + String(use_tls ? "true" : "false")).c_str());
   DEBUG(("USERNAME: " + String(username)).c_str());
   DEBUG(("TOPIC: " + String(prefix_topic)).c_str());
   DEBUG(("MQTT_ID: " + String(mqtt_id)).c_str());
@@ -532,19 +536,19 @@ void Controller::setUpDefaultParameters(stage_parameters &stage1_params, stage_p
   }
 
   stage1_params.fanOnTime = doc["stage1"]["f1Ontime"];
-  stage1_params.fanRevONTime = doc["stage1"]["f1RevONtime"];
+  stage1_params.fanRevONTime = doc["stage1"]["f1RevOntime"];
   stage1_params.fanOffTime = doc["stage1"]["f1Offtime"];
   stage1_params.sprinklerOnTime = doc["stage1"]["s1Ontime"];
   stage1_params.sprinklerOffTime = doc["stage1"]["s1Offtime"];
 
   stage2_params.fanOnTime = doc["stage2"]["f1Ontime"];
-  stage2_params.fanRevONTime = doc["stage2"]["f1RevONtime"];
+  stage2_params.fanRevONTime = doc["stage2"]["f1RevOntime"];
   stage2_params.fanOffTime = doc["stage2"]["f1Offtime"];
   stage2_params.sprinklerOnTime = doc["stage2"]["s1Ontime"];
   stage2_params.sprinklerOffTime = doc["stage2"]["s1Offtime"];
 
   stage3_params.fanOnTime = doc["stage3"]["f1Ontime"];
-  stage3_params.fanRevONTime = doc["stage3"]["f1RevONtime"];
+  stage3_params.fanRevONTime = doc["stage3"]["f1RevOntime"];
   stage3_params.fanOffTime = doc["stage3"]["f1Offtime"];
   stage3_params.sprinklerOnTime = doc["stage3"]["s1Ontime"];
   stage3_params.sprinklerOffTime = doc["stage3"]["s1Offtime"];
