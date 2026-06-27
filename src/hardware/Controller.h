@@ -70,7 +70,8 @@ private:
     DateTime rtc_last_valid_datetime = DateTime(__DATE__, __TIME__);
     Preferences preferences;
     #ifndef TIME_ZONE_OFFSET_HRS
-    int8_t TIME_ZONE_OFFSET_HRS = 0;
+    // Valor en runtime: arranca con el default (Malasia) y lo sobrescribe config.txt si trae la clave.
+    int8_t TIME_ZONE_OFFSET_HRS = DEFAULT_TIME_ZONE_OFFSET_HRS;
     #endif
 
 

@@ -53,8 +53,14 @@
 #define MIN_OFFTIME_STAGE2 0.5
 #define MIN_OFFTIME_STAGE3 0.5
 
-#define TIME_ZONE_OFFSET_HRS            (-7)  /* Ensenada, México */
-// #define TIME_ZONE_OFFSET_HRS            (+8)   /* Taiping, Malaysia */
+// Zona horaria: el valor REAL se lee en runtime de config.txt (SPIFFS), clave
+// "TIME_ZONE_OFFSET_HRS". Si la clave no está, se usa este default.
+#define DEFAULT_TIME_ZONE_OFFSET_HRS   (8)    /* Taiping, Malaysia */
+// (-7 = Ensenada, México)
+//
+// Override fijo en compilación (opcional): descomenta para forzar el valor e
+// ignorar SPIFFS por completo.
+// #define TIME_ZONE_OFFSET_HRS         (-7)
 
 // DeviceAddress ADDRESS_TA = { 0x28, 0x8C, 0x4B, 0xAD, 0x27, 0x19, 0x01, 0xCA }; // Ta
 // // DeviceAddress ADDRESS_TC1 = { 0x28, 0xA7, 0x93, 0x8B, 0x0B, 0x00, 0x00, 0xB2 }; // Ta
