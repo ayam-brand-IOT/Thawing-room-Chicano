@@ -143,7 +143,7 @@ private:
 
     AdcMedian* getAdcMedian(uint8_t pin);
     static uint16_t medianOf(const uint16_t *window, uint8_t count);
-    static float rawToTemp(uint16_t raw);
+    static float rawToTemp(uint16_t raw, uint8_t channel);
 
 public:
     ~Controller();

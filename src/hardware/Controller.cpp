@@ -342,10 +342,24 @@ void Controller::writeDigitalOutput(uint8_t output, uint8_t value) {
 }
 
 // Cuentas del ADC -> °C. Rampa calculada en Excel por calibración manual.
-float Controller::rawToTemp(uint16_t raw) {
+// Ta y Ts se calibran por separado (config.h): con la misma rampa para ambos
+// esto se comporta igual que la fórmula única de antes. Cualquier otro canal
+// cae a la histórica.
+float Controller::rawToTemp(uint16_t raw, uint8_t channel) {
+  float slope  = 0.0263f;
+  float offset = -64.5f;
+
+  if (channel == TA_AI) {
+    slope  = TA_TEMP_SLOPE;
+    offset = TA_TEMP_OFFSET;
+  } else if (channel == TS_AI) {
+    slope  = TS_TEMP_SLOPE;
+    offset = TS_TEMP_OFFSET;
+  }
+
   // const float voltage_ch = (raw * voltage_per_step);
   // const float temp = (voltage_ch * temperature_per_step) + TEMPERATURE_MIN;
-  return raw * 0.0263f - 64.5f;
+  return raw * slope + offset;
 }
 
 // Devuelve el slot de mediana del pin, reservando uno la primera vez que se usa.
@@ -401,7 +415,7 @@ float Controller::readTempFrom(uint8_t channel) {
   AdcMedian *st = getAdcMedian(channel);
 
   if (st == nullptr) {  // sin slot disponible: lectura directa, sin filtrar
-    return (raw == ADC_RAW_INVALID) ? ADC_TEMP_INVALID : rawToTemp(raw);
+    return (raw == ADC_RAW_INVALID) ? ADC_TEMP_INVALID : rawToTemp(raw, channel);
   }
 
   if (raw == ADC_RAW_INVALID) {
@@ -420,7 +434,7 @@ float Controller::readTempFrom(uint8_t channel) {
 
   if (st->count == 0) return ADC_TEMP_INVALID;  // todavía sin ninguna muestra buena
 
-  return rawToTemp(medianOf(st->window, st->count));
+  return rawToTemp(medianOf(st->window, st->count), channel);
 }
 
 // WIFI CLASS
