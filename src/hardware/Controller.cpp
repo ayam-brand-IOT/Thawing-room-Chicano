@@ -341,11 +341,23 @@ void Controller::writeDigitalOutput(uint8_t output, uint8_t value) {
 }
 
 float Controller::readTempFrom(uint8_t channel) {
-  const uint16_t raw_voltage_ch = analogRead(channel); 
+  const uint16_t raw_voltage_ch = analogRead(channel);
+  // Keep the historical calibration for channels without dedicated settings.
+  float slope = 0.0263f;
+  float offset = -64.5f;
+
+  if (channel == TA_AI) {
+    slope = TA_TEMP_SLOPE;
+    offset = TA_TEMP_OFFSET;
+  } else if (channel == TS_AI) {
+    slope = TS_TEMP_SLOPE;
+    offset = TS_TEMP_OFFSET;
+  }
+
   // const float voltage_ch = (raw_voltage_ch * voltage_per_step);
   // Serial.println(voltage_ch);
   // const float temp = (voltage_ch * temperature_per_step) + TEMPERATURE_MIN;
-  const float temp = raw_voltage_ch*0.0263 -64.5; // ramp calculated with excel trhough manual calibration
+  const float temp = raw_voltage_ch * slope + offset;
   return temp;
 }
 

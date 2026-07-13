@@ -8,6 +8,23 @@
 #define HIGH_TEMP_LIMIT 60
 #define LOW_TEMP_LIMIT -40
 
+// Linear calibration of the analog temperature probes:
+// temperature (deg C) = raw ADC value * slope + offset
+// Ta and Ts have separate parameters so each probe can be calibrated independently.
+// TURCK PT100
+#define TA_TEMP_SLOPE  0.0263f
+#define TA_TEMP_OFFSET (-64.5f)
+
+#define TS_TEMP_SLOPE  0.0263f
+#define TS_TEMP_OFFSET (-64.5f)
+
+// // TaoBao Yann
+//#define TA_TEMP_SLOPE  0.0613f
+//#define TA_TEMP_OFFSET (-99.47f)
+
+//#define TS_TEMP_SLOPE  0.0448f
+//#define TS_TEMP_OFFSET (-87.014f)
+
 // setting PWM properties
 #define AIR_PWM     7   
 #define FREQ        5000 
