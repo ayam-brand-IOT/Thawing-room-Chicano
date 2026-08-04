@@ -25,8 +25,30 @@
 
 #define TEMPERATURE_MIN  -50 // Minimum temperature value (in Celsius)
 #define TEMPERATURE_MAX  150
-#define ADC__RESOLUTION  4095 
+#define ADC__RESOLUTION  4095
 #define REFERENCE 3.3
+
+// ---- Muestreo del ADC: filtro de mediana ------------------------------------
+// Ta se lee por AI_0 = GPIO15 = ADC2_CH4 del ESP32-S3 (Ts y Tc caen en ADC1).
+// ADC2 está arbitrado y comparte el bloque analógico con la RF, así que bajo
+// carga de WiFi/TLS una conversión puede fallar. En arduino-esp32 3.x
+// analogRead() NO revisa el error de adc_oneshot_read() y devuelve 0 cuentas,
+// que con la rampa de calibración son -64.5 °C: por eso los glitches de Ta
+// salen SIEMPRE hacia abajo, nunca hacia arriba.
+//
+// Se filtra con una MEDIANA deslizante, no con un promedio: el glitch es un
+// outlier y la mediana lo descarta por completo, mientras que el promedio se lo
+// comería y arrastraría el valor hacia abajo.
+//
+// La ventana avanza UNA muestra por llamada (una por vuelta del loop) en vez de
+// tomar N lecturas seguidas: así abarca decenas de ms y una ráfaga de RF -que
+// dura ~1-2 ms- no puede ensuciar la ventana entera. Además no agrega tiempo al
+// loop: se sigue haciendo un solo analogRead() por canal y por vuelta.
+#define ADC_MEDIAN_WINDOW  7        // impar: la mediana es el elemento central
+#define ADC_MEDIAN_SLOTS   4        // canales con ventana propia (AI_0..AI_3)
+#define ADC_MEDIAN_NO_PIN  0xFF     // marca de slot sin asignar
+#define ADC_RAW_INVALID    0        // 0 cuentas = conversión fallida o sonda suelta
+#define ADC_TEMP_INVALID   -999.0f  // cae fuera de T*_MIN/T*_MAX -> fallo de sensor
 
 #define SECS_IN_HR 3600
 
@@ -105,6 +127,23 @@ private:
     float getMaxTemp(float *temps);
     float getAvgBottomTemp(float *temps);
     void checkAndInsertBottomTemps(float temp, float *temps);
+
+//  Filtro de mediana del ADC (ver el bloque ADC_MEDIAN_* de arriba).
+//  Una ventana por canal, asignada al vuelo la primera vez que se lee el pin.
+//  Sin locking a propósito: readTempFrom() solo se llama desde loop() (core 1),
+//  nunca desde backgroundTasks() ni desde los handlers del servidor web.
+    struct AdcMedian {
+        uint8_t  pin         = ADC_MEDIAN_NO_PIN;
+        uint8_t  count       = 0;   // muestras válidas en la ventana (<= ADC_MEDIAN_WINDOW)
+        uint8_t  next        = 0;   // índice circular de escritura
+        uint8_t  fail_streak = 0;   // conversiones fallidas consecutivas
+        uint16_t window[ADC_MEDIAN_WINDOW] = {0};
+    };
+    AdcMedian adc_median[ADC_MEDIAN_SLOTS];
+
+    AdcMedian* getAdcMedian(uint8_t pin);
+    static uint16_t medianOf(const uint16_t *window, uint8_t count);
+    static float rawToTemp(uint16_t raw);
 
 public:
     ~Controller();

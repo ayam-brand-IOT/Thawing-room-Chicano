@@ -68,6 +68,7 @@
 #define TS_TOPIC                main_topic "Ts"
 #define TC_TOPIC                main_topic "Tc"
 #define TI_TOPIC                main_topic "Ti"
+#define SENSOR_FAULT            main_topic "sensorFault"   // {"sensor":..,"fault":bool,"raw":..}
 #define TS_PT100_TOPIC          main_topic "Ts_PT100"
 #define TS_IR_MLX_TOPIC         main_topic "Ts_IR_MLX"
 #define PID_OUTPUT              main_topic "PID_output"

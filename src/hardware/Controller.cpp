@@ -68,6 +68,7 @@ void Controller::setUpAnalogOutputs() {
   // arduino-esp32 3.x: LEDC es por pin (ya no por canal). ledcAttach reemplaza
   // a ledcSetup + ledcAttachPin.
   ledcAttach(AIR_PIN, FREQ, RESOLUTION);
+  ledcWrite(AIR_PIN, 0);  // estado seguro en boot: infeed de aire en 0 (punto 4)
 }
 
 void Controller::setUpDigitalOutputs() {
@@ -340,13 +341,86 @@ void Controller::writeDigitalOutput(uint8_t output, uint8_t value) {
   digitalWrite(output, value);
 }
 
-float Controller::readTempFrom(uint8_t channel) {
-  const uint16_t raw_voltage_ch = analogRead(channel); 
-  // const float voltage_ch = (raw_voltage_ch * voltage_per_step);
-  // Serial.println(voltage_ch);
+// Cuentas del ADC -> °C. Rampa calculada en Excel por calibración manual.
+float Controller::rawToTemp(uint16_t raw) {
+  // const float voltage_ch = (raw * voltage_per_step);
   // const float temp = (voltage_ch * temperature_per_step) + TEMPERATURE_MIN;
-  const float temp = raw_voltage_ch*0.0263 -64.5; // ramp calculated with excel trhough manual calibration
-  return temp;
+  return raw * 0.0263f - 64.5f;
+}
+
+// Devuelve el slot de mediana del pin, reservando uno la primera vez que se usa.
+// nullptr si ya no quedan slots (más canales analógicos de los previstos): en ese
+// caso readTempFrom() cae al camino sin ventana y se comporta como antes.
+Controller::AdcMedian* Controller::getAdcMedian(uint8_t pin) {
+  for (uint8_t i = 0; i < ADC_MEDIAN_SLOTS; i++) {
+    if (adc_median[i].pin == pin) return &adc_median[i];
+  }
+  for (uint8_t i = 0; i < ADC_MEDIAN_SLOTS; i++) {
+    if (adc_median[i].pin == ADC_MEDIAN_NO_PIN) {
+      adc_median[i].pin = pin;
+      return &adc_median[i];
+    }
+  }
+  return nullptr;
+}
+
+// Mediana de las primeras `count` muestras de la ventana. Copia y ordena por
+// inserción: con count <= 7 sale más barato que cualquier sort genérico, y no se
+// puede ordenar la ventana original porque es un buffer circular.
+uint16_t Controller::medianOf(const uint16_t *window, uint8_t count) {
+  uint16_t sorted[ADC_MEDIAN_WINDOW];
+
+  for (uint8_t i = 0; i < count; i++) {
+    const uint16_t v = window[i];
+    uint8_t j = i;
+    while (j > 0 && sorted[j - 1] > v) {
+      sorted[j] = sorted[j - 1];
+      j--;
+    }
+    sorted[j] = v;
+  }
+
+  // Ventana aún incompleta y con un número par de muestras: promediar las dos
+  // centrales para no sesgar el resultado hacia una de ellas.
+  if (count & 1) return sorted[count / 2];
+  return (uint16_t)(((uint32_t)sorted[count / 2 - 1] + sorted[count / 2]) / 2);
+}
+
+// Lee el canal y devuelve la temperatura de la MEDIANA de la ventana deslizante.
+// Las lecturas de 0 cuentas no entran a la ventana: son el fallo silencioso de
+// analogRead() en ADC2 (o una sonda desconectada), no una medición.
+//
+// Si se acumula una ventana completa de fallos consecutivos ya no es un glitch
+// puntual sino el canal caído, así que se vacía la ventana y se devuelve
+// ADC_TEMP_INVALID. Ese valor queda fuera de los rangos T*_MIN/T*_MAX, de modo
+// que updateSensorReading() lo trata como fallo de sensor: conserva el último
+// valor bueno, publica la alarma y no corta el ciclo. Así se preserva la
+// detección de sonda suelta que antes daba el -64.5 °C directo.
+float Controller::readTempFrom(uint8_t channel) {
+  const uint16_t raw = analogRead(channel);
+  AdcMedian *st = getAdcMedian(channel);
+
+  if (st == nullptr) {  // sin slot disponible: lectura directa, sin filtrar
+    return (raw == ADC_RAW_INVALID) ? ADC_TEMP_INVALID : rawToTemp(raw);
+  }
+
+  if (raw == ADC_RAW_INVALID) {
+    if (st->fail_streak < ADC_MEDIAN_WINDOW) st->fail_streak++;
+    if (st->fail_streak >= ADC_MEDIAN_WINDOW) {
+      st->count = 0;
+      st->next  = 0;
+      return ADC_TEMP_INVALID;
+    }
+  } else {
+    st->fail_streak = 0;
+    st->window[st->next] = raw;
+    st->next = (st->next + 1) % ADC_MEDIAN_WINDOW;
+    if (st->count < ADC_MEDIAN_WINDOW) st->count++;
+  }
+
+  if (st->count == 0) return ADC_TEMP_INVALID;  // todavía sin ninguna muestra buena
+
+  return rawToTemp(medianOf(st->window, st->count));
 }
 
 // WIFI CLASS
