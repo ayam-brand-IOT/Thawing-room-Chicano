@@ -29,7 +29,18 @@ Controller::~Controller() {
 void Controller::init() {
   setUpI2C();
   setUpIOS();
-  logger.setupSD();
+  const bool sd_ok = logger.setupSD();
+
+  // Configuración crítica vive en SPIFFS (memoria interna), no en la SD.
+  ConfigStore::begin();
+
+  // Migración única SD -> SPIFFS para equipos ya desplegados: solo copia los
+  // archivos si SPIFFS aún no los tiene y la SD sí. Idempotente en cada arranque.
+  if (sd_ok) {
+    const bool m1 = ConfigStore::migrateFromSD(CONFIG_FILE);
+    const bool m2 = ConfigStore::migrateFromSD(DEFAULT_PARAMS_FILE);
+    if (m1 || m2) DEBUG("Config migrated from SD to SPIFFS");
+  }
 }
 
 void Controller::setUpLogger() {
@@ -54,8 +65,10 @@ void Controller::setUpIOS() {
 
 
 void Controller::setUpAnalogOutputs() {
-  ledcSetup(AIR_PWM, FREQ, RESOLUTION);
-  ledcAttachPin(AIR_PIN, AIR_PWM);
+  // arduino-esp32 3.x: LEDC es por pin (ya no por canal). ledcAttach reemplaza
+  // a ledcSetup + ledcAttachPin.
+  ledcAttach(AIR_PIN, FREQ, RESOLUTION);
+  ledcWrite(AIR_PIN, 0);  // estado seguro en boot: infeed de aire en 0 (punto 4)
 }
 
 void Controller::setUpDigitalOutputs() {
@@ -320,28 +333,115 @@ bool Controller::readDigitalInput(uint8_t input) {
 }
 
 void Controller::writeAnalogOutput(uint8_t output, uint8_t value) {
-  ledcWrite(AIR_PWM, value);
+  // arduino-esp32 3.x: ledcWrite recibe el PIN, no el canal.
+  ledcWrite(AIR_PIN, value);
 }
 
 void Controller::writeDigitalOutput(uint8_t output, uint8_t value) {
   digitalWrite(output, value);
 }
 
-float Controller::readTempFrom(uint8_t channel) {
-  const uint16_t raw_voltage_ch = analogRead(channel); 
-  // const float voltage_ch = (raw_voltage_ch * voltage_per_step);
-  // Serial.println(voltage_ch);
+// Cuentas del ADC -> °C. Rampa calculada en Excel por calibración manual.
+float Controller::rawToTemp(uint16_t raw) {
+  // const float voltage_ch = (raw * voltage_per_step);
   // const float temp = (voltage_ch * temperature_per_step) + TEMPERATURE_MIN;
-  const float temp = raw_voltage_ch*0.0263 -64.5; // ramp calculated with excel trhough manual calibration
-  return temp;
+  return raw * 0.0263f - 64.5f;
+}
+
+// Devuelve el slot de mediana del pin, reservando uno la primera vez que se usa.
+// nullptr si ya no quedan slots (más canales analógicos de los previstos): en ese
+// caso readTempFrom() cae al camino sin ventana y se comporta como antes.
+Controller::AdcMedian* Controller::getAdcMedian(uint8_t pin) {
+  for (uint8_t i = 0; i < ADC_MEDIAN_SLOTS; i++) {
+    if (adc_median[i].pin == pin) return &adc_median[i];
+  }
+  for (uint8_t i = 0; i < ADC_MEDIAN_SLOTS; i++) {
+    if (adc_median[i].pin == ADC_MEDIAN_NO_PIN) {
+      adc_median[i].pin = pin;
+      return &adc_median[i];
+    }
+  }
+  return nullptr;
+}
+
+// Mediana de las primeras `count` muestras de la ventana. Copia y ordena por
+// inserción: con count <= 7 sale más barato que cualquier sort genérico, y no se
+// puede ordenar la ventana original porque es un buffer circular.
+uint16_t Controller::medianOf(const uint16_t *window, uint8_t count) {
+  uint16_t sorted[ADC_MEDIAN_WINDOW];
+
+  for (uint8_t i = 0; i < count; i++) {
+    const uint16_t v = window[i];
+    uint8_t j = i;
+    while (j > 0 && sorted[j - 1] > v) {
+      sorted[j] = sorted[j - 1];
+      j--;
+    }
+    sorted[j] = v;
+  }
+
+  // Ventana aún incompleta y con un número par de muestras: promediar las dos
+  // centrales para no sesgar el resultado hacia una de ellas.
+  if (count & 1) return sorted[count / 2];
+  return (uint16_t)(((uint32_t)sorted[count / 2 - 1] + sorted[count / 2]) / 2);
+}
+
+// Lee el canal y devuelve la temperatura de la MEDIANA de la ventana deslizante.
+// Las lecturas de 0 cuentas no entran a la ventana: son el fallo silencioso de
+// analogRead() en ADC2 (o una sonda desconectada), no una medición.
+//
+// Si se acumula una ventana completa de fallos consecutivos ya no es un glitch
+// puntual sino el canal caído, así que se vacía la ventana y se devuelve
+// ADC_TEMP_INVALID. Ese valor queda fuera de los rangos T*_MIN/T*_MAX, de modo
+// que updateSensorReading() lo trata como fallo de sensor: conserva el último
+// valor bueno, publica la alarma y no corta el ciclo. Así se preserva la
+// detección de sonda suelta que antes daba el -64.5 °C directo.
+float Controller::readTempFrom(uint8_t channel) {
+  const uint16_t raw = analogRead(channel);
+  AdcMedian *st = getAdcMedian(channel);
+
+  if (st == nullptr) {  // sin slot disponible: lectura directa, sin filtrar
+    return (raw == ADC_RAW_INVALID) ? ADC_TEMP_INVALID : rawToTemp(raw);
+  }
+
+  if (raw == ADC_RAW_INVALID) {
+    if (st->fail_streak < ADC_MEDIAN_WINDOW) st->fail_streak++;
+    if (st->fail_streak >= ADC_MEDIAN_WINDOW) {
+      st->count = 0;
+      st->next  = 0;
+      return ADC_TEMP_INVALID;
+    }
+  } else {
+    st->fail_streak = 0;
+    st->window[st->next] = raw;
+    st->next = (st->next + 1) % ADC_MEDIAN_WINDOW;
+    if (st->count < ADC_MEDIAN_WINDOW) st->count++;
+  }
+
+  if (st->count == 0) return ADC_TEMP_INVALID;  // todavía sin ninguna muestra buena
+
+  return rawToTemp(medianOf(st->window, st->count));
 }
 
 // WIFI CLASS
 
-void Controller::connectToWiFi(bool web_server, bool web_serial, bool OTA) {
-  wifi.connectToWiFi();
-  if(OTA) wifi.setUpOTA();
-  if(web_server) wifi.setUpWebServer(web_serial);
+bool Controller::connectToWiFi(bool web_server, bool web_serial, bool OTA) {
+  const bool connected = wifi.connectToWiFi();
+  if(OTA && connected) wifi.setUpOTA();
+  if(web_server) wifi.setUpWebServer(web_serial);   // servidor web disponible aun sin WiFi (para AP)
+  return connected;
+}
+
+void Controller::startConfigPortal() {
+  wifi.startAccessPoint();
+}
+
+bool Controller::isAPMode() {
+  return wifi.isAPMode();
+}
+
+void Controller::loopAP() {
+  wifi.loopAP();
 }
 
 void Controller::reconnectWiFi() {
@@ -386,20 +486,12 @@ void Controller::setUpWiFi(const char* ssid, const char* password, const char* h
 }
 
 void Controller::updateDefaultParameters(stage_parameters &stage1_params, stage_parameters &stage2_params, stage_parameters &stage3_params, room_parameters &room, data_tset &N_tset ){
-  // Abre el archivo de configuración existente
-  // File configFile = SPIFFS.open("/defaultParameters.txt", FILE_READ);
-  File configFile = SD.open("/defaultParameters.txt", FILE_READ);
-  if (!configFile) {
-        DEBUG("Error al abrir el archivo de configuración para lectura");
-    return;
-  }
-
-  // Lee el contenido en una cadena
-  String content = configFile.readString();
-  configFile.close();
+  // Lee la config actual desde SPIFFS (fallback a .bak); si no hay nada, parte de los embebidos
+  String content = ConfigStore::read(DEFAULT_PARAMS_FILE);
+  if (content.length() == 0) content = EMBEDDED_DEFAULT_PARAMS;
 
   // Parsea el objeto JSON del archivo
-  StaticJsonDocument<1024> doc; // Cambiado a StaticJsonDocument
+  StaticJsonDocument<1024> doc;
   auto error = deserializeJson(doc, content);
   if (error) {
     Serial.println("Error al parsear el archivo de configuración");
@@ -408,18 +500,18 @@ void Controller::updateDefaultParameters(stage_parameters &stage1_params, stage_
 
   // Update the values
   doc["stage1"]["f1Ontime"] = stage1_params.fanOnTime;
-  doc["stage1"]["f1RevONTime"] = stage1_params.fanRevONTime;
+  doc["stage1"]["f1RevOntime"] = stage1_params.fanRevONTime;
   doc["stage1"]["f1Offtime"] = stage1_params.fanOffTime;
 
   doc["stage2"]["f1Ontime"] = stage2_params.fanOnTime;
-  doc["stage2"]["f1RevONTime"] = stage2_params.fanRevONTime;
+  doc["stage2"]["f1RevOntime"] = stage2_params.fanRevONTime;
   doc["stage2"]["f1Offtime"] = stage2_params.fanOffTime;
 
   doc["stage2"]["s1Ontime"] = stage2_params.sprinklerOnTime;
   doc["stage2"]["s1Offtime"] = stage2_params.sprinklerOffTime;
 
   doc["stage3"]["f1Ontime"] = stage3_params.fanOnTime;
-  doc["stage3"]["f1RevONTime"] = stage3_params.fanRevONTime;
+  doc["stage3"]["f1RevOntime"] = stage3_params.fanRevONTime;
   doc["stage3"]["f1Offtime"] = stage3_params.fanOffTime;
   doc["stage3"]["s1Ontime"] = stage3_params.sprinklerOnTime;
   doc["stage3"]["s1Offtime"] = stage3_params.sprinklerOffTime;
@@ -432,50 +524,30 @@ void Controller::updateDefaultParameters(stage_parameters &stage1_params, stage_
   doc["tset"]["tsSet"] = N_tset.ts;
   doc["tset"]["tcSet"] = N_tset.tc;
 
-  // Open file for writing
-  configFile = SD.open("/defaultParameters.txt", FILE_WRITE);
-  if (!configFile) {
-    DEBUG("Error al abrir el archivo de configuración para escritura");
-    return;
-  }
-
-  // Serializa el JSON al archivo
-  if (serializeJson(doc, configFile) == 0) {
+  // Persiste atómicamente en SPIFFS
+  String out;
+  serializeJson(doc, out);
+  if (!ConfigStore::write(DEFAULT_PARAMS_FILE, out)) {
     DEBUG("Error al escribir en el archivo de configuración");
   }
-
-  configFile.close();
 }
 
-void Controller::runConfigFile(char* ssid, char* password, char* hostname, char* ip_address, uint16_t* port, char* mqtt_id, char* username, char* mqtt_password, char* prefix_topic, char* static_ip) {
-  // Iniciar SPIFFS
-  // if (!SPIFFS.begin(true)) {
-  //   DEBUG("An error has occurred while mounting SPIFFS");
-  //   return;
-  // }
-
-  // Leer archivo de configuración
-  File file = SD.open(CONFIG_FILE);
-  if (!file) {
-    while (true){
-      DEBUG("Failed to open config file");
-      delay(1000);
-    }
-    // Pending What to do if the file is not found
-    return;
+bool Controller::runConfigFile(char* ssid, char* password, char* hostname, char* ip_address, uint16_t* port, char* mqtt_id, char* username, char* mqtt_password, char* prefix_topic, char* static_ip) {
+  // Leer archivo de configuración desde SPIFFS (con fallback a .bak).
+  // Si no hay config usable, devolver false: el caller levantará el portal AP.
+  const String content = ConfigStore::read(CONFIG_FILE);
+  if (content.length() == 0) {
+    DEBUG("No config file found - signaling AP/portal fallback");
+    ERROR(NO_CONFIG_FILE);
+    return false;
   }
 
-  // Tamaño para el documento JSON
-  size_t size = file.size();
-  std::unique_ptr<char[]> buf(new char[size]);
-  file.readBytes(buf.get(), size);
-  file.close();
-
   DynamicJsonDocument doc(1024);
-  DeserializationError error = deserializeJson(doc, buf.get());
+  DeserializationError error = deserializeJson(doc, content);
   if (error) {
-      DEBUG("Failed to parse config file");
-    return;
+    DEBUG("Failed to parse config file");
+    ERROR(NO_CONFIG_FILE);
+    return false;
   }
 
   // Asignar valores y verificar si están presentes en el JSON
@@ -490,6 +562,7 @@ void Controller::runConfigFile(char* ssid, char* password, char* hostname, char*
     wifi.setStaticIP(ip, gateway);
   } 
   if (doc.containsKey("PORT")) *port = doc["PORT"];
+  if (doc.containsKey("USE_TLS")) use_tls = doc["USE_TLS"];
   if (doc.containsKey("USERNAME")) strlcpy(username, doc["USERNAME"], HOSTNAME_SIZE);
   // if (doc.containsKey("TOPIC")) strlcpy(prefix_topic, doc["TOPIC"], HOSTNAME_SIZE);
   if (doc.containsKey("MQTT_ID")) strlcpy(mqtt_id, doc["MQTT_ID"], MQTT_ID_SIZE);
@@ -507,26 +580,26 @@ void Controller::runConfigFile(char* ssid, char* password, char* hostname, char*
   DEBUG(("HOST_NAME: " + String(hostname)).c_str());
   DEBUG(("IP_ADDRESS: " + String(ip_address)).c_str());
   DEBUG(("PORT: " + String(*port)).c_str());
+  DEBUG(("USE_TLS: " + String(use_tls ? "true" : "false")).c_str());
   DEBUG(("USERNAME: " + String(username)).c_str());
   DEBUG(("TOPIC: " + String(prefix_topic)).c_str());
   DEBUG(("MQTT_ID: " + String(mqtt_id)).c_str());
   DEBUG(("MQTT_PASSWORD: " + String(mqtt_password)).c_str());
 
+  return true;
 }
 
 void Controller::setUpDefaultParameters(stage_parameters &stage1_params, stage_parameters &stage2_params, stage_parameters &stage3_params, room_parameters &room, data_tset &N_tset){
-  File file = SD.open("/defaultParameters.txt", "r");
-  if (!file) {
-    while (true){
-      DEBUG("Failed to open default parameters file");
-      delay(1000);
-    }
-    
-    return;
+  // Lee desde SPIFFS (fallback a .bak). Último recurso: parámetros embebidos en firmware,
+  // así la sala siempre tiene parámetros válidos aunque falten todos los archivos.
+  String jsonText = ConfigStore::read(DEFAULT_PARAMS_FILE);
+  if (jsonText.length() == 0) {
+    DEBUG("No default parameters file - using embedded fallback");
+    ERROR(NO_DEFAULT_PARAMS);
+    jsonText = EMBEDDED_DEFAULT_PARAMS;
+    // Sembrar SPIFFS para próximos arranques
+    ConfigStore::write(DEFAULT_PARAMS_FILE, jsonText);
   }
-
-  String jsonText = file.readString();
-  file.close();
 
   // Parsea el JSON
   StaticJsonDocument<1024> doc;
@@ -537,19 +610,19 @@ void Controller::setUpDefaultParameters(stage_parameters &stage1_params, stage_p
   }
 
   stage1_params.fanOnTime = doc["stage1"]["f1Ontime"];
-  stage1_params.fanRevONTime = doc["stage1"]["f1RevONtime"];
+  stage1_params.fanRevONTime = doc["stage1"]["f1RevOntime"];
   stage1_params.fanOffTime = doc["stage1"]["f1Offtime"];
   stage1_params.sprinklerOnTime = doc["stage1"]["s1Ontime"];
   stage1_params.sprinklerOffTime = doc["stage1"]["s1Offtime"];
 
   stage2_params.fanOnTime = doc["stage2"]["f1Ontime"];
-  stage2_params.fanRevONTime = doc["stage2"]["f1RevONtime"];
+  stage2_params.fanRevONTime = doc["stage2"]["f1RevOntime"];
   stage2_params.fanOffTime = doc["stage2"]["f1Offtime"];
   stage2_params.sprinklerOnTime = doc["stage2"]["s1Ontime"];
   stage2_params.sprinklerOffTime = doc["stage2"]["s1Offtime"];
 
   stage3_params.fanOnTime = doc["stage3"]["f1Ontime"];
-  stage3_params.fanRevONTime = doc["stage3"]["f1RevONtime"];
+  stage3_params.fanRevONTime = doc["stage3"]["f1RevOntime"];
   stage3_params.fanOffTime = doc["stage3"]["f1Offtime"];
   stage3_params.sprinklerOnTime = doc["stage3"]["s1Ontime"];
   stage3_params.sprinklerOffTime = doc["stage3"]["s1Offtime"];

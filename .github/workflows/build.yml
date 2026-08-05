@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - master
+      - feature/esp32-core-3x-mqtt-tls
 
 jobs:
   build:

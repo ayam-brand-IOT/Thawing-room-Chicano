@@ -1,9 +1,10 @@
 #ifndef MY_WIFI_H
 #define MY_WIFI_H
-#include "EEPROM.h"
+#include <Preferences.h>
 #include <Update.h>
 #include <SPIFFS.h>
 #include "config.h"
+#include <DNSServer.h>
 #include <ESPmDNS.h>
 #include <AsyncTCP.h>
 #include <WiFiMulti.h>
@@ -27,11 +28,6 @@
 #define ERR_LOST_CONNECTION "Lost connection"
 
 
-#ifdef WebSerial
-  // No incluir WebSerialLite.h
-#else
-  #include "WebSerialLite.h"
-#endif
 #include "ESPAsyncWebServer.h"
 
 
@@ -47,10 +43,16 @@ class WIFI {
     void setStaticIP(const char* ip, const char* gateway);
 
 
-    void connectToWiFi();
+    // Devuelve true si logró conectarse, false si agotó los intentos de boot.
+    bool connectToWiFi();
     bool refreshWiFiStatus();
     bool getConnectionStatus();
     void setUpWebServer(bool brigeSerial = false);
+
+    // Modo Access Point + portal cautivo de reconfiguración.
+    void startAccessPoint();
+    bool isAPMode();
+    void loopAP();   // debe llamarse periódicamente para atender el DNS cautivo
   private:
     enum ErrorType { 
       WRONG_CREDENTIALS, 
@@ -60,9 +62,12 @@ class WIFI {
 
     const String errorMessages[NUM_ERRORS] = {ERR_WRONG_CREDENTIALS, ERR_LOST_CONNECTION};
     
-    char ssid[SSID_SIZE];  
+    char ssid[SSID_SIZE];
     char password[PASSWORD_SIZE];
-    char hostname[HOSTNAME_SIZE];  
+    char hostname[HOSTNAME_SIZE];
+    bool ap_mode = false;
+    bool web_server_started = false;
+    DNSServer dnsServer;
     bool use_static_ip = false;
     IPAddress static_ip;
     IPAddress static_gateway;

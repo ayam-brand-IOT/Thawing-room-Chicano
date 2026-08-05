@@ -62,7 +62,7 @@ void Logger::print(const String &message) {
     if (currentOutput == HW_SERIAL) {
         Serial.print(message);
     } else {
-        WebSerial.print(message);
+        Serial.print(message);
     }
 }
 
@@ -70,21 +70,21 @@ void Logger::println(const String &message) {
     if (currentOutput == HW_SERIAL) {
         Serial.println(message);
     } else {
-        WebSerial.println(message);
+        Serial.println(message);
     }
 }
 
 void Logger::printError(uint8_t errorType) {
     const String message = errorMessages[errorType];
     if (currentOutput == WEBSERIAL) {
-        WebSerial.println("[ERROR -> LOGGER]: " + message);
+        Serial.println("[ERROR -> LOGGER]: " + message);
     } 
     Serial.println("[ERROR -> LOGGER]: " + message);
 }
 
 void Logger::printError(const String &message) {
     if (currentOutput == WEBSERIAL) {
-        WebSerial.println("[ERROR " + message);
+        Serial.println("[ERROR " + message);
     } 
     Serial.println("[ERROR " + message);
 }
@@ -93,7 +93,7 @@ void Logger::printValue(const String &key, const String &value) {
     if (currentOutput == HW_SERIAL) {
         Serial.println(key + ": " + value);
     } else {
-        WebSerial.println(key + ": " + value);
+        Serial.println(key + ": " + value);
     }
 }
 
@@ -106,26 +106,52 @@ void Logger::printTime(const String &prefix, int hour, int minute, int day, int 
     if (currentOutput == HW_SERIAL) {
         Serial.println(timeStr);
     } else {
-        WebSerial.println(timeStr);
+        Serial.println(timeStr);
     }
 }
 
-void Logger::setupSD() {
+bool Logger::setupSD() {
     SPI.begin(SCK, MISO, MOSI, SS);
     pinMode(SS, OUTPUT);
     digitalWrite(SS, HIGH); // Set CS to HIGH initially (inverted logic)
 
     // Manually control CS for the SD card initialization
     digitalWrite(SS, LOW); // Set CS LOW to select the SD card (inverted logic)
-    while (!SD.begin(SS)) {
+
+    // Reintento ACOTADO: la SD es opcional (solo logs). Si no aparece, el equipo
+    // sigue operando sin ella en vez de colgarse en un loop infinito.
+    const uint8_t max_attempts = 3;
+    theresSD = false;
+    for (uint8_t attempt = 1; attempt <= max_attempts; attempt++) {
+        if (SD.begin(SS)) {
+            theresSD = true;
+            break;
+        }
         printError(NOT_SDCARD);
-        digitalWrite(SS, HIGH); // Set CS HIGH to deselect the SD card (inverted logic)
-        // return;
-        delay(2000);
+        delay(500);
     }
-    
-    theresSD = true;
+
     digitalWrite(SS, HIGH); // Set CS HIGH to deselect the SD card (inverted logic)
+
+    if (!theresSD) {
+        Serial.println("[Logger] No SD card - continuing without logging to SD");
+    }
+    return theresSD;
+}
+
+bool Logger::retrySD() {
+    if (theresSD) return true;
+    digitalWrite(SS, LOW);
+    if (SD.begin(SS)) {
+        theresSD = true;
+        Serial.println("[Logger] SD card detected");
+    }
+    digitalWrite(SS, HIGH);
+    return theresSD;
+}
+
+bool Logger::hasSD() {
+    return theresSD;
 }
 
 void Logger::getSDInfo() {

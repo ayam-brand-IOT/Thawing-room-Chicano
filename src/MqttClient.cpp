@@ -1,9 +1,58 @@
 #include "MqttClient.h"
+#include "mqtt_certs.h"
+#include <SPIFFS.h>
 
-WiFiClient esp32Client;
+// Ruta opcional en SPIFFS para sobrescribir el CA embebido sin reflashear.
+#define MQTT_CA_SPIFFS_PATH "/mqtt_ca.pem"
+
+// Timeouts que ACOTAN el bloqueo del reconnect dentro del loop de control. Sin esto,
+// un broker inalcanzable con TLS cuelga el loop ~30s en el handshake y dispara el
+// watchdog. Con el bloqueo acotado a ~socket+handshake, el WDT (15s) es seguro.
+#define MQTT_SOCKET_TIMEOUT_S         5   // socket PubSubClient (default 15)
+#define MQTT_TLS_HANDSHAKE_TIMEOUT_S  8   // handshake TLS (el que se colgaba ~30s)
+
+WiFiClient esp32Client;            // transporte en claro (TLS deshabilitado)
+WiFiClientSecure esp32SecureClient; // transporte TLS (server-auth con CA)
 PubSubClient mqttClient(esp32Client);
 
 // void subscribeReceive(char* topic, byte* payload, unsigned int length);
+
+void MqttClient::setTLS(bool enabled, const String& ca_override) {
+  use_tls = enabled;
+  if (!enabled) {
+    mqttClient.setClient(esp32Client);
+    DEBUG("TLS deshabilitado: MQTT en claro");
+    return;
+  }
+
+  // Prioridad: PEM pasado por parámetro > /mqtt_ca.pem en SPIFFS > CA embebido.
+  if (ca_override.length() > 0) {
+    ca_cert = ca_override;
+    DEBUG("TLS: usando CA pasado por parámetro");
+  } else {
+    String fromFs;
+    if (SPIFFS.exists(MQTT_CA_SPIFFS_PATH)) {
+      File f = SPIFFS.open(MQTT_CA_SPIFFS_PATH, "r");
+      if (f) { fromFs = f.readString(); f.close(); }
+    }
+    if (fromFs.indexOf("BEGIN CERTIFICATE") >= 0) {
+      ca_cert = fromFs;
+      DEBUG("TLS: usando CA desde SPIFFS (" MQTT_CA_SPIFFS_PATH ")");
+    } else {
+      ca_cert = String(MQTT_CA_CERT);
+      DEBUG("TLS: usando CA embebido en firmware");
+    }
+  }
+
+  esp32SecureClient.setCACert(ca_cert.c_str());
+  esp32SecureClient.setHandshakeTimeout(MQTT_TLS_HANDSHAKE_TIMEOUT_S);  // no colgar el loop en un handshake inalcanzable
+  mqttClient.setClient(esp32SecureClient);
+  DEBUG("TLS habilitado: el broker se verifica contra el CA");
+}
+
+bool MqttClient::isTLS() {
+  return use_tls;
+}
 
 void MqttClient::connect(const char *domain, uint16_t port, const char *id, const char *username, const char *password) {
   strncpy(mqtt_domain, domain, sizeof(mqtt_domain) - 1);
@@ -21,6 +70,7 @@ void MqttClient::connect(const char *domain, uint16_t port, const char *id, cons
   mqtt_password[sizeof(mqtt_password) - 1] = '\0';  // Asegurarse de que esté terminado con '\0'
 
   mqttClient.setServer(domain, port);
+  mqttClient.setSocketTimeout(MQTT_SOCKET_TIMEOUT_S);  // acota el bloqueo del socket en connect/reconnect
   if (mqttClient.connect(mqtt_id, mqtt_username, mqtt_password)) {
     DEBUG("Connection has been established, well done");
     if(callback_connect != NULL) callback_connect();

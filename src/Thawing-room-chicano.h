@@ -49,9 +49,12 @@ void asyncLoopSprinkler(uint32_t &timer, uint32_t offTime, uint32_t onTime);
 void getTempAvg();
 void updateTemperature();
 bool handleInputs(button_type override = NONE);
-void callback(char *topic, byte *payload, unsigned int len); 
+void callback(char *topic, byte *payload, unsigned int len);
 bool hasIntervalPassed(uint32_t &previousMillis, uint32_t interval, bool to_min = false);
-bool isValidTemperature(float temp, float minTemp, float maxTemp, const String& sensorName);
+// Valida una lectura contra [lo, hi]. Si es válida actualiza `value`; si no, conserva
+// el último valor bueno y dispara alarma una sola vez por transición. Devuelve validez.
+bool updateSensorReading(float raw, float &value, float lo, float hi, const char* name, bool &fault);
+void setUpWatchdog();
 
 void publishPID();
 void onMQTTConnect();
@@ -61,7 +64,7 @@ void publishTemperatures();
 void publishStateChange(const char* topic, int state, const String& message);
 
 
-void sendTemperaturaAlert(float temp, String sensor);
+void sendSensorFault(const char* sensor, bool fault, float raw);
 void turn_on_flush_routine();
 void turn_off_flush_routine();
 void ntp_sync_callback();  // forward declaration — definida debajo de controller
@@ -71,18 +74,28 @@ void ntp_sync_callback();  // forward declaration — definida debajo de control
 
 #define MINS 60000
 
-// ---- Probes min and max values ----//////////////////////////////////////////////////////////////////////// 
+// ---- Watchdog ----////////////////////////////////////////////////////////////////////////////////////////
+// Task WDT: resetea el equipo si el loop de control se cuelga > este tiempo. Holgado
+// respecto al peor bloqueo legítimo del loop (reconnect MQTT/TLS, acotado a ~10s en
+// MqttClient). Tras el reset, el estado del ciclo se recupera de flash (saveLastState).
+#define WDT_TIMEOUT_MS 15000
 
-#define TA_MIN -9999
-#define TA_MAX 9999
-#define TA_DEF 15 
+// ---- Probes min and max values ----////////////////////////////////////////////////////////////////////////
+// Rango físico plausible por sensor. Una lectura FUERA de este rango se trata como
+// FALLO de sensor (punto 1): se conserva el último valor bueno y se publica alarma,
+// SIN cortar el ciclo. Nota: readTempFrom() devuelve ADC_TEMP_INVALID (-999) cuando
+// el canal lleva una ventana entera de conversiones fallidas -sonda desconectada o
+// ADC caído-, así que ese caso queda fuera de rango y se detecta aquí.
+#define TA_MIN -40
+#define TA_MAX 60
+#define TA_DEF 15   // valor semilla hasta la primera lectura buena
 
-#define TS_MIN -9999
-#define TS_MAX 9999
+#define TS_MIN -40
+#define TS_MAX 60
 #define TS_DEF 5
 
-#define TC_MIN -9999
-#define TC_MAX 9999
+#define TC_MIN -40
+#define TC_MAX 60
 #define TC_DEF -1
 
 
@@ -114,7 +127,7 @@ DATA_FOLER:
 -------- hasIntervalPassed(uint32_t &previousMillis, uint32_t interval, bool to_min = false)
 -------- updateTemperatures()
 -------- handleInputs(button_type override)
--------- isValidTemperature(float temp, float minTemp, float maxTemp, const String& sensorName)
+-------- updateSensorReading(float raw, float &value, float lo, float hi, const char* name, bool &fault)
 -------- void getTsAvg();
 
 

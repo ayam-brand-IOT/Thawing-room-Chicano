@@ -1,4 +1,5 @@
 #include "Thawing-room-chicano.h"
+#include "esp_task_wdt.h"   // Task Watchdog (punto 4)
 
 // Stage parameters
 stage_parameters stage1_params;
@@ -47,10 +48,15 @@ uint8_t stage2_month = 0;
 SystemTimers timers = {0};  // Consolidated timer structure
 
 // ######################## Temperature ########################
-float TA = 0, TA_F = 0;  //Ta
-float TS = 0, TS_F = 0;  //Ts
-float TC = 0, TC_F = 0;  //Tc
+// Semilla = valor default hasta la primera lectura buena (evita arrancar en 0).
+float TA = TA_DEF, TA_F = TA_DEF;  //Ta
+float TS = TS_DEF, TS_F = TS_DEF;  //Ts
+float TC = TC_DEF, TC_F = TC_DEF;  //Tc
 float TI = 0, TI_F = 0;  //Ti optional
+
+// Flags de fallo por sensor (punto 1): true = última lectura fuera de rango físico.
+// Mientras true, se conserva el último valor bueno y ya se publicó la alarma.
+bool ta_fault = false, ts_fault = false, tc_fault = false;
 
 // ########################### Buffer ##########################
 SensorBuffer sensorTs(BUFFER_SIZE);  // Crear una instancia para el sensor Ts
@@ -102,13 +108,17 @@ void logResetReason() {
 
 void backgroundTasks(void* pvParameters) {
   for (;;) {
-    controller.WiFiLoop();
-    
-    if(controller.isWiFiConnected()) {
-      controller.loopOTA();
+    if (controller.isAPMode()) {
+      // En modo portal: atender el DNS cautivo. No intentar reconectar STA.
+      controller.loopAP();
+    } else {
+      controller.WiFiLoop();
+      if(controller.isWiFiConnected()) {
+        controller.loopOTA();
+      }
     }
     // printStackUsage(); // Monitorea el uso de la pila
-    vTaskDelay(100 / portTICK_PERIOD_MS);
+    vTaskDelay(50 / portTICK_PERIOD_MS);
   }
 }
 
@@ -116,18 +126,19 @@ void backgroundTasks(void* pvParameters) {
 void setup() {
   controller.init();
 
-  char SSID[SSID_SIZE];
-  char PASS[PASSWORD_SIZE];
-  char HOST_NAME[HOSTNAME_SIZE];
-  char IP_ADDRESS[IP_ADDRESS_SIZE];
-  char STATIC_IP[IP_ADDRESS_SIZE];
-  uint16_t PORT;
-  char MQTT_ID[MQTT_ID_SIZE];
-  char USERNAME[MQTT_USERNAME_SIZE];
-  char MQTT_PASSWORD[MQTT_PASSWORD_SIZE];
-  char PREFIX_TOPIC[PREFIX_SIZE];
+  // Defaults por si no hay config.txt: el equipo igual arranca y levanta su portal AP.
+  char SSID[SSID_SIZE] = "";
+  char PASS[PASSWORD_SIZE] = "";
+  char HOST_NAME[HOSTNAME_SIZE] = "thawingroom";
+  char IP_ADDRESS[IP_ADDRESS_SIZE] = "";
+  char STATIC_IP[IP_ADDRESS_SIZE] = "";
+  uint16_t PORT = 1883;
+  char MQTT_ID[MQTT_ID_SIZE] = "";
+  char USERNAME[MQTT_USERNAME_SIZE] = "";
+  char MQTT_PASSWORD[MQTT_PASSWORD_SIZE] = "";
+  char PREFIX_TOPIC[PREFIX_SIZE] = "";
 
-  controller.runConfigFile(SSID, PASS, HOST_NAME, IP_ADDRESS, &PORT, MQTT_ID, USERNAME, MQTT_PASSWORD, PREFIX_TOPIC, STATIC_IP);
+  const bool config_ok = controller.runConfigFile(SSID, PASS, HOST_NAME, IP_ADDRESS, &PORT, MQTT_ID, USERNAME, MQTT_PASSWORD, PREFIX_TOPIC, STATIC_IP);
   controller.setUpDefaultParameters(stage1_params, stage2_params, stage3_params, room, temp_set);
 
   start_btn.begin();
@@ -135,7 +146,23 @@ void setup() {
   d_start_button.begin();
 
   controller.setUpWiFi(SSID, PASS, HOST_NAME);
-  controller.connectToWiFi(/* web_server */ true, /* web_serial */ true, /* OTA */ true);
+
+  // online = hay config válida Y WiFi conectado (modo estación). En modo AP/portal
+  // queda false: sin red ni broker no tiene sentido intentar MQTT.
+  bool online = false;
+  if (!config_ok) {
+    // Sin config.txt no hay credenciales que probar: portal de configuración directo.
+    // startConfigPortal levanta el AP y registra el servidor web.
+    logger.println(F("No config - starting AP config portal"));
+    controller.startConfigPortal();
+  } else {
+    online = controller.connectToWiFi(/* web_server */ true, /* web_serial */ true, /* OTA */ true);
+    if (!online) {
+      // 3 reinicios sin lograr WiFi -> portal AP. El control de la sala sigue operando.
+      logger.println(F("WiFi failed on boot - starting AP config portal"));
+      controller.startConfigPortal();
+    }
+  }
   controller.setUpRTC();
 
   runner.init();
@@ -148,9 +175,9 @@ void setup() {
   high_priority_msgs.enable();
   ntp_sync_task.enable();
 
-  if (false /* flush active */) {
-    turn_on_flush.enable();
-  }
+  // Flush periódico: deshabilitado por ahora (no hay flag de configuración que lo
+  // active). Las tasks turn_on/off_flush quedan registradas para habilitarlo a futuro
+  // con turn_on_flush.enable() cuando se agregue la clave de config correspondiente.
 
   DateTime current_date = controller.getDateTime();
   char dateBuffer[60];
@@ -163,9 +190,27 @@ void setup() {
   logger.println(stateBuffer);
   if (last_state.stage != IDLE) currentState = last_state;
 
-  mqtt.setCallback(callback);
-  mqtt.onConnect(onMQTTConnect);
-  mqtt.connect(IP_ADDRESS, PORT, MQTT_ID, USERNAME, MQTT_PASSWORD);
+  // Solo levantar MQTT si estamos online (estación con WiFi). En modo AP/portal
+  // IP_ADDRESS puede estar vacío y no hay red: intentar conectar sería un gasto inútil
+  // (con TLS además se cuelga ~30s en el handshake hacia un host inalcanzable).
+  if (online) {
+    mqtt.setCallback(callback);
+    mqtt.onConnect(onMQTTConnect);
+    mqtt.setTLS(controller.isTLSEnabled());  // verifica el broker contra el CA embebido (mqtt_certs.h)
+
+    // TLS valida la vigencia del certificado contra el reloj del sistema. No basta con
+    // que el RTC dé una fecha "razonable": si está atrasada respecto al notBefore del
+    // cert, el handshake falla con -9984. Por eso, igual que el sketch de referencia,
+    // forzamos una sync NTP fresca ANTES de conectar siempre que haya WiFi.
+    if (controller.isTLSEnabled() && controller.isWiFiConnected()) {
+      logger.println(F("TLS: sincronizando hora por NTP antes de conectar MQTT"));
+      controller.forceNTPSync();
+    }
+
+    mqtt.connect(IP_ADDRESS, PORT, MQTT_ID, USERNAME, MQTT_PASSWORD);
+  } else {
+    logger.println(F("AP/offline mode - skipping MQTT connect"));
+  }
 
   xTaskCreatePinnedToCore(backgroundTasks, "communicationTask", 20000, NULL, 1, &communicationTask, 0);
 
@@ -178,9 +223,33 @@ void setup() {
   air_in_feed_PID.SetTunings(Kp, Ki, Kd);
 
   delay(750);
+
+  // Armar el watchdog al FINAL del setup: todo lo legítimamente lento (WiFi, NTP,
+  // handshake TLS) ya ocurrió arriba. A partir de acá, si el loop se cuelga > WDT_TIMEOUT_MS
+  // el equipo se reinicia y recupera el estado del ciclo desde flash.
+  setUpWatchdog();
+}
+
+// ---- Task Watchdog (punto 4) ----
+// Reinicia si la task del loop() deja de alimentar el WDT. No vigila las idle tasks
+// (idle_core_mask = 0) para NO disparar por bloqueos legítimos de WiFi/OTA en el core 0.
+void setUpWatchdog() {
+  esp_task_wdt_config_t wdt_cfg = {
+    .timeout_ms     = WDT_TIMEOUT_MS,
+    .idle_core_mask = 0,
+    .trigger_panic  = true,
+  };
+  // El core de Arduino ya inicializa el TWDT; si es así, reconfigurar en vez de re-init.
+  if (esp_task_wdt_init(&wdt_cfg) == ESP_ERR_INVALID_STATE) {
+    esp_task_wdt_reconfigure(&wdt_cfg);
+  }
+  esp_task_wdt_add(NULL);   // vigilar la task actual (loopTask, core 1)
+  esp_task_wdt_reset();
+  logger.println(F("[BOOT] Watchdog armado"));
 }
 
 void loop() {
+  esp_task_wdt_reset();   // alimentar el watchdog en cada iteración (punto 4)
   runner.execute();
   // if is for testing porpuse comment this "if" and replace DateTime "now" for: DateTime now(__DATE__, __TIME__); 
   DateTime current_date = controller.getDateTime();
@@ -585,12 +654,9 @@ void handleStage3(){
     if (!controller.getFanState() && hasIntervalPassed(timers.stage3.fan, stage3_params.fanOffTime, true)) stage_3.setStep(1);
   }
 
-  bool finishedStage3 = false;
-
-  if (finishedStage3){
-    stage_3.destroy();
-    stopRoutine();
-  }
+  // La Etapa 3 NO tiene condición de fin automática, por diseño: el producto permanece
+  // en descongelado hasta que producción presiona STOP (al sacar el pescado del cuarto).
+  // El fin del ciclo lo dispara stopRoutine() vía botón STOP físico o MQTT (sub_stop).
 }
 
 void idle(){
@@ -625,7 +691,7 @@ void callback(char *topic, byte *payload, unsigned int len) {
     if (!controller.isLoraTc()) return;
 
     const float tc_raw = mqtt.responseToFloat(payload, len);
-    TC = isValidTemperature(tc_raw, TC_MIN, TC_MAX, "TC") ? tc_raw : TC_DEF;
+    updateSensorReading(tc_raw, TC, TC_MIN, TC_MAX, "TC", tc_fault);
 
     char buf[20];
     sprintf(buf, "%.2f", TC);
@@ -924,11 +990,28 @@ void stopRoutine() {
   logger.println("Stage 0 Status Send packet ");
 }
 
-bool isValidTemperature(float temp, float minTemp, float maxTemp, const String& sensorName) {
-  bool is_valid = temp >= minTemp && temp <= maxTemp;
-  if(is_valid) sendTemperaturaAlert(temp, sensorName);
+// Publica la alarma de sensor a MQTT y la loguea. fault=true al detectar el fallo,
+// fault=false al recuperarse. `raw` es la lectura cruda que disparó el evento.
+void sendSensorFault(const char* sensor, bool fault, float raw) {
+  char msg[80];
+  snprintf(msg, sizeof(msg), "{\"sensor\":\"%s\",\"fault\":%s,\"raw\":%.2f}",
+           sensor, fault ? "true" : "false", raw);
+  mqtt.publishData(SENSOR_FAULT, String(msg));
+  logger.println(msg);
+}
 
-  return is_valid;
+// Punto 1: si la lectura es válida actualiza `value`. Si NO lo es, conserva el último
+// valor bueno (no toca `value`) y publica alarma una sola vez por transición. El ciclo
+// NO se detiene: el proceso sigue con el último valor confiable.
+bool updateSensorReading(float raw, float &value, float lo, float hi, const char* name, bool &fault) {
+  const bool valid = raw >= lo && raw <= hi;
+  if (valid) {
+    value = raw;
+    if (fault) { fault = false; sendSensorFault(name, false, raw); }  // recuperación
+    return true;
+  }
+  if (!fault) { fault = true; sendSensorFault(name, true, raw); }      // nuevo fallo
+  return false;
 }
 
 void updateTemperature() {
@@ -936,18 +1019,13 @@ void updateTemperature() {
   float tc_raw = controller.readTempFrom(TC_AI);
   const bool use_ir_ts = controller.isTsContactLess() && controller.hasIRSensor();
   float ts_raw = use_ir_ts ? controller.getIRTemp() : controller.readTempFrom(TS_AI);
-  
-  
-  TA = isValidTemperature(ta_raw, TA_MIN, TA_MAX, "TA") ? ta_raw : TA_DEF;
-  if (!controller.isLoraTc()) TC = isValidTemperature(tc_raw, TC_MIN, TC_MAX, "TC") ? tc_raw : TC_DEF;
-  TS = isValidTemperature(ts_raw, TS_MIN, TS_MAX, "TS") ? ts_raw : TS_DEF;
+
+  updateSensorReading(ta_raw, TA, TA_MIN, TA_MAX, "TA", ta_fault);
+  // Cuando Tc llega por LoRa (isLoraTc), no se lee del canal analógico: lo actualiza el callback.
+  if (!controller.isLoraTc()) updateSensorReading(tc_raw, TC, TC_MIN, TC_MAX, "TC", tc_fault);
+  updateSensorReading(ts_raw, TS, TS_MIN, TS_MAX, "TS", ts_fault);
 
   getTempAvg();
-}
-
-void sendTemperaturaAlert(float temp, String sensor){
-  // const String msg = "{\"temp\":" + String(temp) + ", \"sensor\":" + sensor + "}";
-  // mqtt.publishData(SPOILED_SENSOR, msg);
 }
 
 void setStage(SystemState stage) {

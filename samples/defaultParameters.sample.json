@@ -1,0 +1,33 @@
+{
+  "stage1": {
+    "f1Ontime": "1",
+    "f1RevOntime": "1",
+    "f1Offtime": "1",
+    "s1Ontime": "0.5",
+    "s1Offtime": "1"
+  },
+  "stage2": {
+    "f1Ontime": "1",
+    "f1RevOntime": "1",
+    "f1Offtime": "1",
+    "s1Ontime": "1",
+    "s1Offtime": "1"
+  },
+  "stage3": {
+    "f1Ontime": "10",
+    "f1RevOntime": "1",
+    "f1Offtime": "30",
+    "s1Ontime": "1",
+    "s1Offtime": "15"
+  },
+  "setPoint": {
+    "A": "0.5",
+    "B": "20",
+    "coef_pid_fwd": "100",
+    "coef_pid_rev": "100"
+  },
+  "tset": {
+    "tsSet": "21",
+    "tcSet": "21"
+  }
+}

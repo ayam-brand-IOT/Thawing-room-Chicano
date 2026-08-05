@@ -9,6 +9,7 @@
 #include "config.h"
 #include "Logger.h"
 #include <SPIFFS.h>
+#include "ConfigStore.h"
 #include <RTClib.h>
 #include <WiFiUdp.h>
 #include <Arduino.h>
@@ -24,8 +25,30 @@
 
 #define TEMPERATURE_MIN  -50 // Minimum temperature value (in Celsius)
 #define TEMPERATURE_MAX  150
-#define ADC__RESOLUTION  4095 
+#define ADC__RESOLUTION  4095
 #define REFERENCE 3.3
+
+// ---- Muestreo del ADC: filtro de mediana ------------------------------------
+// Ta se lee por AI_0 = GPIO15 = ADC2_CH4 del ESP32-S3 (Ts y Tc caen en ADC1).
+// ADC2 está arbitrado y comparte el bloque analógico con la RF, así que bajo
+// carga de WiFi/TLS una conversión puede fallar. En arduino-esp32 3.x
+// analogRead() NO revisa el error de adc_oneshot_read() y devuelve 0 cuentas,
+// que con la rampa de calibración son -64.5 °C: por eso los glitches de Ta
+// salen SIEMPRE hacia abajo, nunca hacia arriba.
+//
+// Se filtra con una MEDIANA deslizante, no con un promedio: el glitch es un
+// outlier y la mediana lo descarta por completo, mientras que el promedio se lo
+// comería y arrastraría el valor hacia abajo.
+//
+// La ventana avanza UNA muestra por llamada (una por vuelta del loop) en vez de
+// tomar N lecturas seguidas: así abarca decenas de ms y una ráfaga de RF -que
+// dura ~1-2 ms- no puede ensuciar la ventana entera. Además no agrega tiempo al
+// loop: se sigue haciendo un solo analogRead() por canal y por vuelta.
+#define ADC_MEDIAN_WINDOW  7        // impar: la mediana es el elemento central
+#define ADC_MEDIAN_SLOTS   4        // canales con ventana propia (AI_0..AI_3)
+#define ADC_MEDIAN_NO_PIN  0xFF     // marca de slot sin asignar
+#define ADC_RAW_INVALID    0        // 0 cuentas = conversión fallida o sonda suelta
+#define ADC_TEMP_INVALID   -999.0f  // cae fuera de T*_MIN/T*_MAX -> fallo de sensor
 
 #define SECS_IN_HR 3600
 
@@ -56,6 +79,7 @@ private:
     bool fan_state = false;
     int ARRAY_SIZE = 7;
     bool ir_ts = false;
+    bool use_tls = true;  // TLS activo por defecto; poner "USE_TLS": false en config.txt para desactivar
     bool lora_tc = false;
     bool ir_sensor_ready = false;
     bool ir_sensor_attempted = false;
@@ -68,7 +92,8 @@ private:
     DateTime rtc_last_valid_datetime = DateTime(__DATE__, __TIME__);
     Preferences preferences;
     #ifndef TIME_ZONE_OFFSET_HRS
-    int8_t TIME_ZONE_OFFSET_HRS = 0;
+    // Valor en runtime: arranca con el default (Malasia) y lo sobrescribe config.txt si trae la clave.
+    int8_t TIME_ZONE_OFFSET_HRS = DEFAULT_TIME_ZONE_OFFSET_HRS;
     #endif
 
 
@@ -103,6 +128,23 @@ private:
     float getAvgBottomTemp(float *temps);
     void checkAndInsertBottomTemps(float temp, float *temps);
 
+//  Filtro de mediana del ADC (ver el bloque ADC_MEDIAN_* de arriba).
+//  Una ventana por canal, asignada al vuelo la primera vez que se lee el pin.
+//  Sin locking a propósito: readTempFrom() solo se llama desde loop() (core 1),
+//  nunca desde backgroundTasks() ni desde los handlers del servidor web.
+    struct AdcMedian {
+        uint8_t  pin         = ADC_MEDIAN_NO_PIN;
+        uint8_t  count       = 0;   // muestras válidas en la ventana (<= ADC_MEDIAN_WINDOW)
+        uint8_t  next        = 0;   // índice circular de escritura
+        uint8_t  fail_streak = 0;   // conversiones fallidas consecutivas
+        uint16_t window[ADC_MEDIAN_WINDOW] = {0};
+    };
+    AdcMedian adc_median[ADC_MEDIAN_SLOTS];
+
+    AdcMedian* getAdcMedian(uint8_t pin);
+    static uint16_t medianOf(const uint16_t *window, uint8_t count);
+    static float rawToTemp(uint16_t raw);
+
 public:
     ~Controller();
     Controller(/* args */);
@@ -120,6 +162,8 @@ public:
     void setUpRTC();
     void forceNTPSync();   // llamado por TaskScheduler cada 24hrs
     bool isLoraTc();
+    // ¿La config pide TLS para MQTT? (clave USE_TLS en config.txt). Default false.
+    bool isTLSEnabled() const { return use_tls; }
     // Stage2 scheduling
     void saveStage2StartTime(uint8_t hour, uint8_t minute, uint8_t day, uint8_t month);
     void loadStage2StartTime();
@@ -152,9 +196,14 @@ public:
     bool refreshWiFiStatus();
     bool getConnectionStatus();
     // Puto el que lo lea
-    void connectToWiFi(bool web_server, bool web_serial, bool OTA); 
+    bool connectToWiFi(bool web_server, bool web_serial, bool OTA);
     void setUpWiFi(const char* ssid, const char* password, const char* hostname);
-    void runConfigFile(char* ssid, char* password, char* hostname, char* ip_address, uint16_t* port, char* mqtt_id, char* username, char* mqtt_password, char* prefix_topic, char* static_ip);
+    // Access Point / portal de configuración
+    void startConfigPortal();
+    bool isAPMode();
+    void loopAP();
+    // Devuelve true si la configuración se cargó; false si no hay config.txt usable.
+    bool runConfigFile(char* ssid, char* password, char* hostname, char* ip_address, uint16_t* port, char* mqtt_id, char* username, char* mqtt_password, char* prefix_topic, char* static_ip);
     void setUpDefaultParameters(stage_parameters &stage1_params, stage_parameters &stage2_params, stage_parameters &stage3_params, room_parameters &room, data_tset &N_tset);
     void updateDefaultParameters(stage_parameters &stage1_params, stage_parameters &stage2_params, stage_parameters &stage3_params, room_parameters &room, data_tset &N_tset);
 
@@ -164,40 +213,30 @@ public:
     bool hasIRSensor();
     // void DEBUG(String message);
 
-    template <typename T> 
-    bool updateConfigJson(const char* param, T value, String file = "/config.txt"){
-        // Abre el archivo de configuración existente
-        File configFile = SD.open(file, FILE_READ);
-        if (!configFile) {
-            DEBUG("Error al abrir el archivo de configuración para lectura");
-            return false;
+    template <typename T>
+    bool updateConfigJson(const char* param, T value, const char* file = CONFIG_FILE){
+        // Lee desde SPIFFS (con fallback a .bak)
+        const String content = ConfigStore::read(file);
+
+        StaticJsonDocument<1024> doc;
+        if (content.length()) {
+            auto error = deserializeJson(doc, content);
+            if (error) {
+                DEBUG("Error al parsear el archivo de configuración");
+                return false;
+            }
         }
 
-        // Parsea el objeto JSON del archivo
-        StaticJsonDocument<1024> doc; // Cambiado a StaticJsonDocument
-        auto error = deserializeJson(doc, configFile);
-        if (error) {
-            Serial.println("Error al parsear el archivo de configuración");
-            return false;
-        }
-
-        // Update the values
+        // Actualiza el valor
         doc[param] = value;
 
-        // Open file for writing
-        configFile = SD.open(file, FILE_WRITE);
-        if (!configFile) {
-            DEBUG("Error al abrir el archivo de configuración para escritura");
-            return false;
-        }
-
-        // Serializa el JSON al archivo
-        if (serializeJson(doc, configFile) == 0) {
+        // Persiste atómicamente en SPIFFS (.tmp -> validar -> .bak -> promover)
+        String out;
+        serializeJson(doc, out);
+        if (!ConfigStore::write(file, out)) {
             DEBUG("Error al escribir en el archivo de configuración");
             return false;
         }
-
-        configFile.close();
         return true;
     }
 

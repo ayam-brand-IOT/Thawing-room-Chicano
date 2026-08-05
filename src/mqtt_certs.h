@@ -1,0 +1,30 @@
+// AUTOGENERADO por certs/embed-ca.sh — NO editar a mano.
+// Certificado raíz (CA) propio para verificar el broker MQTT por TLS.
+// Regenerar: cd certs && ./embed-ca.sh
+#ifndef MQTT_CERTS_H
+#define MQTT_CERTS_H
+
+// CA público — seguro de versionar. La clave privada (ca.key) NO se incrusta.
+static const char MQTT_CA_CERT[] PROGMEM = R"EOF(
+-----BEGIN CERTIFICATE-----
+MIIDDzCCAfegAwIBAgIUTm3dC0wA/0wAF0Gp/Ubk5slhG8kwDQYJKoZIhvcNAQEL
+BQAwFzEVMBMGA1UEAwwMTVFUVEJyb2tlckNBMB4XDTI2MDYxOTAwNDc1M1oXDTM2
+MDYxNjAwNDc1M1owFzEVMBMGA1UEAwwMTVFUVEJyb2tlckNBMIIBIjANBgkqhkiG
+9w0BAQEFAAOCAQ8AMIIBCgKCAQEAr6sLpqRq4VH4bMKZRFSrUlmpRaDD1I3YG/T4
+Xr40WfRJLkkVKz7v1MFlr+64RJxd0n8EU6zTuG6Cmta1ngFeyMmgWaPkyuY/dxls
+subad3MrZYgvZy7sN78+Bjc/JDiwMr2rOhFcc02+xkm7IKfgWuWGyRSKcBv4HIZy
+uELj4PCgqt+sXqkvSumULIisJmvsQam0eEYriEikuCoSsDi4K0wQ/O71zBoPPT9G
+RvhpMWQZt63gjBF7D3LzXu3NK+B4RmgsN+opn9zS4VUg/nfnwty0PQgPPQ3gilCM
+fjAxyTw9uPTbHn/SKIQOxuWfyVeYBTrzgjHNKDzZnDGHhPSqfwIDAQABo1MwUTAd
+BgNVHQ4EFgQUHG9JhzZy6Dta2PsJDHo9V0LQjTMwHwYDVR0jBBgwFoAUHG9JhzZy
+6Dta2PsJDHo9V0LQjTMwDwYDVR0TAQH/BAUwAwEB/zANBgkqhkiG9w0BAQsFAAOC
+AQEAQE6MauYJu7rEP3mO98ThVy8ClECWJKRtKOPvRnuTppFdoPX8g5R1oxOEWtb2
+LoR3+Ro+FI9AnvwrgVRKqSExAoW9+ycPkoKpbTqf2OIXHMFj2PPfMOWOg99a6979
+Rarfwt3ntTah0j1wWq+pR9zF1MhsBtbXofy7UnCwJWFqg+wVu5n6qigzMfEWmdFa
+mjddUoGZ+dyuTF7/Naa/twmYTVq0ZEVt7IdP0TmYBQ0nPWgrlGhdwBYkZcRpq3PO
+aVyaPHsXUh0UnFU7hji0Bg7hnCiC6TowhNI1JZB/A1QFGRAFiARSFsibD5a6GWH9
+ud8CItp3u4ZTodHw/fP51gc3HA==
+-----END CERTIFICATE-----
+)EOF";
+
+#endif // MQTT_CERTS_H

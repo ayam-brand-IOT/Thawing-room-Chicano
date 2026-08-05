@@ -53,8 +53,14 @@
 #define MIN_OFFTIME_STAGE2 0.5
 #define MIN_OFFTIME_STAGE3 0.5
 
-// #define TIME_ZONE_OFFSET_HRS            (-7)  /* Ensenada, México */
-#define TIME_ZONE_OFFSET_HRS            (+8)   /* Taiping, Malaysia */
+// Zona horaria: el valor REAL se lee en runtime de config.txt (SPIFFS), clave
+// "TIME_ZONE_OFFSET_HRS". Si la clave no está, se usa este default.
+#define DEFAULT_TIME_ZONE_OFFSET_HRS   (8)    /* Taiping, Malaysia */
+// (-7 = Ensenada, México)
+//
+// Override fijo en compilación (opcional): descomenta para forzar el valor e
+// ignorar SPIFFS por completo.
+// #define TIME_ZONE_OFFSET_HRS         (-7)
 
 // DeviceAddress ADDRESS_TA = { 0x28, 0x8C, 0x4B, 0xAD, 0x27, 0x19, 0x01, 0xCA }; // Ta
 // // DeviceAddress ADDRESS_TC1 = { 0x28, 0xA7, 0x93, 0x8B, 0x0B, 0x00, 0x00, 0xB2 }; // Ta
@@ -67,6 +73,19 @@
 
 #define CONFIG_FILE "/config.txt"
 #define DEFAULT_PARAMS_FILE "/defaultParameters.txt"
+
+// ------------ Access Point / Config Portal -------------------------------->
+// Si no hay config.txt, o si el WiFi falla 3 veces al arrancar, el equipo
+// levanta su propio Access Point para poder reconfigurarlo desde un navegador.
+#define AP_SSID_PREFIX  "ThawingRoom-"   // se le concatena el hostname
+#define AP_PASSWORD     "thawing1234"     // WPA2 (>= 8 chars). "" = AP abierto
+#define AP_MAX_BOOT_WIFI_TRIES 3          // intentos de WiFi en boot antes de caer a AP
+#define DNS_PORT 53
+
+// ------------ Embedded fallback parameters -------------------------------->
+// Último recurso si no hay defaultParameters.txt ni en SPIFFS ni en SD ni en .bak.
+// Mantener en sintonía con data/defaultParameters.txt.
+#define EMBEDDED_DEFAULT_PARAMS "{\"stage1\":{\"f1Ontime\":\"1\",\"f1RevOntime\":\"1\",\"f1Offtime\":\"1\",\"s1Ontime\":\"0.5\",\"s1Offtime\":\"1\"},\"stage2\":{\"f1Ontime\":\"1\",\"f1RevOntime\":\"1\",\"f1Offtime\":\"1\",\"s1Ontime\":\"1\",\"s1Offtime\":\"1\"},\"stage3\":{\"f1Ontime\":\"10\",\"f1RevOntime\":\"1\",\"f1Offtime\":\"30\",\"s1Ontime\":\"1\",\"s1Offtime\":\"15\"},\"setPoint\":{\"A\":\"0.5\",\"B\":\"20\"},\"tset\":{\"tsSet\":\"21\",\"tcSet\":\"21\"}}"
 
 
 #endif

@@ -1,7 +1,12 @@
 // #include "WiFiType.h"
 #include "WIFI.h"
+#include "ConfigStore.h"
 
 AsyncWebServer server(80);
+
+// Bandera a nivel de archivo para que los handlers (lambdas sin captura) sepan
+// si estamos en modo Access Point y deban redirigir al portal cautivo.
+static bool s_ap_mode = false;
 
 static void handle_update_progress_cb(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
   if (!index){
@@ -35,16 +40,6 @@ static void handle_update_progress_cb(AsyncWebServerRequest *request, String fil
     return html;
   };
 
-
-/* Message callback of WebSerial */
-static void recvMsg(uint8_t *data, size_t len){
-  WebSerial.println("Received Data...");
-  String d = "";
-  for(int i=0; i < len; i++){
-    d += char(data[i]);
-  }
-  WebSerial.println(d);
-}
 
 String WIFI::generateHTMLForJson(JsonVariant json, String path) {
     String html = "";
@@ -82,26 +77,25 @@ bool valToBool(String value){
 }
 
 void handleFileUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+  // Acumulamos el archivo en memoria y lo persistimos atómicamente en SPIFFS al
+  // terminar. Así una subida cortada a la mitad nunca corrompe el config bueno.
+  static String upload_buffer;
+
   if (!index) {
     Serial.printf("Subiendo archivo: %s\n", filename.c_str());
-
-    SD.remove(CONFIG_FILE);  // Cambiar el nombre del archivo según sea necesario
-    File file = SD.open(CONFIG_FILE, FILE_WRITE);
-    if (!file) {
-      Serial.println("Error al abrir el archivo para escribir");
-      return;
-    }
-    file.close();
+    upload_buffer = "";
+    upload_buffer.reserve(2048);
   }
 
-  File file = SD.open(CONFIG_FILE, FILE_APPEND);
-  if (file) {
-    file.write(data, len);
-    file.close();
-  }
+  for (size_t i = 0; i < len; i++) upload_buffer += (char)data[i];
 
   if (final) {
-    Serial.printf("Archivo subido con éxito: %s\n", filename.c_str());
+    if (ConfigStore::write(CONFIG_FILE, upload_buffer)) {
+      Serial.printf("Archivo subido con éxito: %s\n", filename.c_str());
+    } else {
+      Serial.println("Error: config subido no es JSON válido, descartado");
+    }
+    upload_buffer = "";
   }
 }
 
@@ -187,13 +181,20 @@ void WIFI::setStaticIP(const char* ip, const char* gateway){
 }
 
 void WIFI::setUpWebServer(bool brigeSerial){
-  /*use mdns for host name resolution*/
-  while (!MDNS.begin(hostname)){ // http://esp32.local
-    DEBUG("Error setting up MDNS responder!");
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
+  // El servidor web se registra una sola vez; en caída a modo AP reusamos las rutas.
+  if (web_server_started) return;
+
+  /*use mdns for host name resolution — reintento ACOTADO, no bloquea el arranque*/
+  bool mdns_ok = false;
+  for (uint8_t i = 0; i < 5 && !mdns_ok; i++) {
+    mdns_ok = MDNS.begin(hostname);
+    if (!mdns_ok) {
+      DEBUG("Error setting up MDNS responder!");
+      vTaskDelay(300 / portTICK_PERIOD_MS);
+    }
   }
-  
-  DEBUG("mDNS responder started Pinche Hugo");
+  if (mdns_ok) DEBUG("mDNS responder started");
+  else         DEBUG("mDNS unavailable - continuing without it");
 
   // Función para autenticación básica en todas las rutas
   auto checkAuth = [&](AsyncWebServerRequest *request) {
@@ -214,8 +215,9 @@ void WIFI::setUpWebServer(bool brigeSerial){
 
   server.on("/config.txt", HTTP_GET, [&checkAuth](AsyncWebServerRequest *request){
     if(!checkAuth(request)) return;
-    if (SD.exists(CONFIG_FILE)) {
-        request->send(SD, CONFIG_FILE, "application/json", true);
+    const String content = ConfigStore::read(CONFIG_FILE);
+    if (content.length()) {
+        request->send(200, "application/json", content);
     } else {
         request->send(404, "text/plain", "Configuration file not found");
     }
@@ -223,8 +225,9 @@ void WIFI::setUpWebServer(bool brigeSerial){
 
   server.on("/defaultParameters.txt", HTTP_GET, [&checkAuth](AsyncWebServerRequest *request){
     if(!checkAuth(request)) return;
-    if (SD.exists("/defaultParameters.txt")) {
-        request->send(SD, "/defaultParameters.txt", "application/json", true);
+    const String content = ConfigStore::read(DEFAULT_PARAMS_FILE);
+    if (content.length()) {
+        request->send(200, "application/json", content);
     } else {
         request->send(404, "text/plain", "Default Parameters file not found");
     }
@@ -251,6 +254,10 @@ void WIFI::setUpWebServer(bool brigeSerial){
 
   server.on("/logs", HTTP_GET, [&](AsyncWebServerRequest *request){
     if(!checkAuth(request)) return;
+    if (!logger.hasSD()) {
+      request->send(503, "text/plain", "No SD card present - logs unavailable");
+      return;
+    }
     String log_list = "";
     File root = SD.open(LOG_FOLDER_PATH);
     if (!root) {
@@ -270,7 +277,12 @@ void WIFI::setUpWebServer(bool brigeSerial){
   });
 
   server.onNotFound([](AsyncWebServerRequest *request) {
-      // request->send(SPIFFS, request->url(), String(), false); <------ Buen pishi hack!
+      // En modo AP, cualquier URL desconocida redirige al portal (captive portal):
+      // así el navegador/teléfono abre solo la página de configuración.
+      if (s_ap_mode) {
+        request->redirect("/edit-config");
+        return;
+      }
       request->send(404, "text/html", "Not found: <u>'"+ request->url() + "'</u>");
   });
 
@@ -298,6 +310,10 @@ void WIFI::setUpWebServer(bool brigeSerial){
     // Manejar la descarga de archivos
   server.on("/download_log", HTTP_GET, [&checkAuth](AsyncWebServerRequest *request){
     if(!checkAuth(request)) return;
+    if (!logger.hasSD()) {
+      request->send(503, "text/plain", "No SD card present - logs unavailable");
+      return;
+    }
     if (request->hasParam("file")) {
       String fileName = request->getParam("file")->value();
       String full_path = LOG_FOLDER_PATH + String("/") + fileName;
@@ -360,53 +376,48 @@ void WIFI::setUpWebServer(bool brigeSerial){
 
   server.on("/update-config", HTTP_POST, [&](AsyncWebServerRequest *request) {
     if(!checkAuth(request)) return;
-  
+
     bool ssidExists = false;
-  
+
     int params = request->params();
     for (int i = 0; i < params; i++) {
-      AsyncWebParameter* p = request->getParam(i);
+      const AsyncWebParameter* p = request->getParam(i);
       String keyPath = p->name();
       // logger.println(keyPath + ": " + p->value());
       ssidExists = ssidExists || keyPath == "SSID";
     }
-  
+
     // Seleccionar el archivo a actualizar dependiendo de si existe el "SSID"
     const char* fileToUpdate = ssidExists ? CONFIG_FILE : DEFAULT_PARAMS_FILE;
-  
-    File file = SD.open(fileToUpdate, "r");
-    if (!file) {
+
+    const String current = ConfigStore::read(fileToUpdate);
+    if (current.length() == 0) {
       request->send(500, "text/plain", "Failed to open config file for writing");
       return;
     }
-  
+
     DynamicJsonDocument doc(4096);  // Ajusta el tamaño según tu archivo JSON
-    DeserializationError error = deserializeJson(doc, file);
+    DeserializationError error = deserializeJson(doc, current);
     if (error) {
-      file.close();
       request->send(500, "text/plain", "Failed to parse config file");
       return;
     }
-    
-    file.close();  // Cerrar el archivo para reiniciar el puntero
-  
+
     // Actualizar el JSON con los nuevos valores del cuerpo
     updateJsonFromForm(request, doc);
-  
+
     // Imprimir el documento actualizado en el Serial
     Serial.println("Printing updated doc:");
     serializeJson(doc, Serial);
     Serial.println();
-  
-    // Re-abrir el archivo para escribir los nuevos valores
-    file = SD.open(fileToUpdate, "w");
-    
-    if (serializeJson(doc, file) == 0) {
-      file.close();
-      request->send(500, "text/plain", "Failed to write to file");
-    } else {
-      file.close();
+
+    // Persistir atómicamente en SPIFFS
+    String out;
+    serializeJson(doc, out);
+    if (ConfigStore::write(fileToUpdate, out)) {
       request->send(200, "text/plain", "Configuration updated successfully");
+    } else {
+      request->send(500, "text/plain", "Failed to write to file");
     }
   });
 
@@ -422,11 +433,10 @@ void WIFI::setUpWebServer(bool brigeSerial){
   });
 
   
-  if (brigeSerial) {
-    WebSerial.begin(&server);
-    WebSerial.onMessage(recvMsg);
-  }
+  // WebSerial eliminado en la migración a arduino-esp32 3.x.
+  (void)brigeSerial;
   server.begin();
+  web_server_started = true;
 }
 
 String WIFI::getIP(){
@@ -435,39 +445,88 @@ String WIFI::getIP(){
   return ip;
 }
 
-void WIFI::connectToWiFi(){
+bool WIFI::connectToWiFi(){
   if (use_static_ip) {
     if(!WiFi.config(static_ip, static_gateway, static_subnet, static_primary_dns, static_secondary_dns)) {
       DEBUG("Failed to configure static IP");
     }
   }
 
+  WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   uint32_t notConnectedCounter = 0;
-  EEPROM.begin(32);
+  // Contador de reinicios por WiFi fallido persistido en NVS vía Preferences
+  // (antes EEPROM). Es un valor transitorio: si se pierde, vuelve a 0, que es
+  // el default seguro. Namespace "wifi", clave "bootTries".
+  Preferences prefs;
   while (WiFi.status() != WL_CONNECTED) {
     vTaskDelay(2000 / portTICK_PERIOD_MS);
     DEBUG("Wifi connecting...");
-      
+
     notConnectedCounter++;
-    if(notConnectedCounter > 7) { // Reset board if not connected after 5s
-      DEBUG("Resetting due to Wifi not connecting...");
-      const uint8_t num_of_tries = EEPROM.readInt(1);
-      if (num_of_tries == 3) break;          
-      else {
-        EEPROM.writeInt(1, num_of_tries + 1);
-        EEPROM.commit();
-        EEPROM.end();
-        ESP.restart();          
+    if(notConnectedCounter > 7) { // ~16s sin conectar en este arranque
+      prefs.begin("wifi", false);
+      const uint32_t num_of_tries = prefs.getUInt("bootTries", 0);
+      // Tras AP_MAX_BOOT_WIFI_TRIES reinicios fallidos, rendirse y caer a modo AP.
+      if (num_of_tries >= AP_MAX_BOOT_WIFI_TRIES) {
+        DEBUG("WiFi failed after max boot tries - falling back to AP mode");
+        prefs.putUInt("bootTries", 0);   // resetear el contador para el próximo arranque manual
+        prefs.end();
+        return false;
       }
+      DEBUG("Resetting due to Wifi not connecting...");
+      prefs.putUInt("bootTries", num_of_tries + 1);
+      prefs.end();
+      ESP.restart();
     }
   }
 
-  EEPROM.writeInt(1, 0);
-  EEPROM.commit();
-  EEPROM.end();
+  prefs.begin("wifi", false);
+  prefs.putUInt("bootTries", 0);
+  prefs.end();
 
   DEBUG(("IP address: " + WiFi.localIP().toString()).c_str());
+  return true;
+}
+
+void WIFI::startAccessPoint(){
+  ap_mode = true;
+  s_ap_mode = true;
+
+  // Levantar el AP. El control de la sala sigue corriendo en loop() en paralelo.
+  WiFi.mode(WIFI_AP);
+  String ap_ssid = String(AP_SSID_PREFIX) + String(hostname);
+
+  bool ok;
+  if (strlen(AP_PASSWORD) >= 8) ok = WiFi.softAP(ap_ssid.c_str(), AP_PASSWORD);  // WPA2
+  else                          ok = WiFi.softAP(ap_ssid.c_str());                // abierto
+
+  if (!ok) {
+    DEBUG("softAP failed to start");
+    return;
+  }
+
+  const IPAddress ap_ip = WiFi.softAPIP();
+
+  // DNS cautivo: responde toda consulta con nuestra IP -> el portal abre solo.
+  dnsServer.start(DNS_PORT, "*", ap_ip);
+
+  // Reusar las rutas web ya registradas para editar la config.
+  setUpWebServer(false);
+
+  char buf[80];
+  snprintf(buf, sizeof(buf), "AP up: '%s' @ %s (pwd: %s)",
+           ap_ssid.c_str(), ap_ip.toString().c_str(),
+           strlen(AP_PASSWORD) >= 8 ? AP_PASSWORD : "<open>");
+  DEBUG(buf);
+}
+
+bool WIFI::isAPMode(){
+  return ap_mode;
+}
+
+void WIFI::loopAP(){
+  if (ap_mode) dnsServer.processNextRequest();
 }
 
 void WIFI::setUpOTA(){

@@ -1,0 +1,16 @@
+{
+  "SSID": "MyWiFiNetwork",
+  "WIFI_PASSWORD": "wifi-password-here",
+  "HOST_NAME": "thawingroom",
+  "STATIC_IP": "192.168.100.49",
+  "GATEWAY": "192.168.100.1",
+  "IP_ADDRESS": "192.168.100.69",
+  "PORT": "8883",
+  "USE_TLS": true,
+  "MQTT_ID": "Chicano_cfpp9",
+  "USERNAME": "mqtt-user",
+  "MQTT_PASSWORD": "mqtt-password-here",
+  "TIME_ZONE_OFFSET_HRS": "-7",
+  "IR_TS": true,
+  "LoRa_Tc": false
+}
