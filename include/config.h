@@ -11,6 +11,10 @@
 // Linear calibration of the analog temperature probes:
 // temperature (deg C) = raw ADC value * slope + offset
 // Ta and Ts have separate parameters so each probe can be calibrated independently.
+// SICK Raja 
+//#define TS_TEMP_SLOPE  0.0571f
+//#define TS_TEMP_OFFSET (-87.9f)
+
 // TURCK PT100
 #define TA_TEMP_SLOPE  0.0263f
 #define TA_TEMP_OFFSET (-64.5f)
