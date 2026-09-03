@@ -48,6 +48,12 @@
 #define ADC_MEDIAN_SLOTS   4        // canales con ventana propia (AI_0..AI_3)
 #define ADC_MEDIAN_NO_PIN  0xFF     // marca de slot sin asignar
 #define ADC_RAW_INVALID    0        // 0 cuentas = conversión fallida o sonda suelta
+// Piso de un lazo 4-20 mA sano. El transmisor entrega 4 mA como fondo de escala y el
+// módulo AIA03 mapea 0-20 mA a 0-3.3 V, así que 4 mA = 4/20 * 4095 = 819 cuentas: por
+// debajo de eso el lazo NO puede estar vivo. Se baja el umbral a 750 (~3.7 mA) para
+// dejar margen al error del módulo (±200 µA sobre el rango de ambiente ≈ ±41 cuentas)
+// más el del propio transmisor, y que una sonda buena al fondo de escala no se acuse.
+#define ADC_LOOP_MIN_COUNTS 750
 #define ADC_TEMP_INVALID   -999.0f  // cae fuera de T*_MIN/T*_MAX -> fallo de sensor
 
 #define SECS_IN_HR 3600
@@ -89,6 +95,9 @@ private:
     bool ntp_synced_to_internal = false;
     uint32_t rtc_last_reconnect_attempt = 0;
     uint32_t rtc_last_valid_millis = 0;
+    TimeSource last_time_source     = TIME_SRC_NONE;
+    TimeSource reported_time_source = TIME_SRC_UNKNOWN;  // para loguear solo en el cambio
+    void noteTimeSource(TimeSource source);
     DateTime rtc_last_valid_datetime = DateTime(__DATE__, __TIME__);
     Preferences preferences;
     #ifndef TIME_ZONE_OFFSET_HRS
@@ -137,15 +146,34 @@ private:
         uint8_t  count       = 0;   // muestras válidas en la ventana (<= ADC_MEDIAN_WINDOW)
         uint8_t  next        = 0;   // índice circular de escritura
         uint8_t  fail_streak = 0;   // conversiones fallidas consecutivas
+        uint16_t last_raw    = 0;   // última cuenta cruda del ADC, válida o no (diagnóstico)
         uint16_t window[ADC_MEDIAN_WINDOW] = {0};
     };
     AdcMedian adc_median[ADC_MEDIAN_SLOTS];
 
     AdcMedian* getAdcMedian(uint8_t pin);
+    // Búsqueda de solo lectura: NO reserva slot. Para diagnóstico desde métodos const.
+    const AdcMedian* findAdcMedian(uint8_t pin) const;
     static uint16_t medianOf(const uint16_t *window, uint8_t count);
     static float rawToTemp(uint16_t raw, uint8_t channel);
 
 public:
+    // Vista cruda de un canal analógico, en CUENTAS del ADC (no en °C).
+    // Es la única forma de ver la cadena real 4-20 mA -> AIA03 -> ADC:
+    //   4 mA  = 819 cuentas  (fondo de escala del transmisor)
+    //   20 mA = 4095 cuentas (tope de escala)
+    // Un lazo 4-20 mA sano NUNCA baja de ~819. Por debajo el lazo está abierto:
+    // sensor muerto, cable cortado o humedad puenteando. `raw == 0` es el caso extremo
+    // (0 mA), que es justo el -64.5 °C que aparece hoy en el SCADA.
+    struct AdcDiag {
+        uint16_t raw      = ADC_RAW_INVALID;  // última lectura cruda, válida o no
+        uint16_t filtered = ADC_RAW_INVALID;  // mediana de la ventana: la que da la temperatura
+        uint8_t  fails    = 0;                // conversiones fallidas consecutivas
+        bool     valid    = false;            // hay al menos una muestra buena en la ventana
+    };
+    // Canal nunca leído -> devuelve el struct por defecto (todo inválido).
+    AdcDiag getAdcDiag(uint8_t channel) const;
+
     ~Controller();
     Controller(/* args */);
 
@@ -175,6 +203,12 @@ public:
     bool isRTCConnected();
     bool isTsContactLess();
     DateTime getDateTime();
+    // De dónde salió la última hora devuelta por getDateTime().
+    TimeSource getTimeSource() const { return last_time_source; }
+    // false = la hora es la semilla de compilación, o sea inventada. Todo lo que programe
+    // algo a futuro (arranque diferido) debería mirar esto antes de confiar en el reloj.
+    bool isTimeTrusted() const { return last_time_source != TIME_SRC_NONE; }
+    static const char* timeSourceName(TimeSource source);
     void setUpOneWireProbes(); // -----> NOT DEFINED YET
     void setLoraTc(bool value);
     void saveLogToSD(const String &message);

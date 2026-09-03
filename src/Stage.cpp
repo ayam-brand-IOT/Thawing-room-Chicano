@@ -45,16 +45,12 @@ void Stage::destroy() {
 }
 
 void Stage::DEBUG(const char *message) {
-    char buffer[100];
-    snprintf(buffer, sizeof(buffer), "[Stage]: %s", message);
-    logger.println(buffer);
+    LOG_D(TAG_STAGE, "%s", message);
 }
 
-
+// Decía "[ERROR -> MqttClient]" y salía por println() en vez de como error: copiar y pegar.
 void Stage::ERROR(ErrorType error){
-  char buffer[100];
-  snprintf(buffer, sizeof(buffer), "[ERROR -> MqttClient]: %s", errorMessages[error]);
-  logger.println(buffer);
+  LOG_E(TAG_STAGE, "%s", errorMessages[error].c_str());
 }
 
 // Compare this snippet from src/Stage.cpp:

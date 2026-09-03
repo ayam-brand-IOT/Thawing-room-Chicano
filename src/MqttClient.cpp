@@ -17,6 +17,29 @@ PubSubClient mqttClient(esp32Client);
 
 // void subscribeReceive(char* topic, byte* payload, unsigned int length);
 
+void MqttClient::setTopicPrefix(const char* prefix) {
+  if (prefix == nullptr || prefix[0] == '\0') {
+    strlcpy(topic_prefix, DEFAULT_TOPIC_PREFIX, sizeof(topic_prefix));
+  } else {
+    strlcpy(topic_prefix, prefix, sizeof(topic_prefix));
+
+    // Normalizar el '/' final: sin esto "cfpp9" produciría "cfpp9Ta" en vez de "cfpp9/Ta".
+    const size_t len = strlen(topic_prefix);
+    if (len > 0 && topic_prefix[len - 1] != '/' && len + 1 < sizeof(topic_prefix)) {
+      topic_prefix[len]     = '/';
+      topic_prefix[len + 1] = '\0';
+    }
+  }
+
+  DEBUG(("Topic prefix: " + String(topic_prefix)).c_str());
+}
+
+// prefijo + sufijo en un buffer reusable. snprintf trunca en vez de desbordar.
+const char* MqttClient::fullTopic(const char* suffix) {
+  snprintf(topic_buf, sizeof(topic_buf), "%s%s", topic_prefix, suffix ? suffix : "");
+  return topic_buf;
+}
+
 void MqttClient::setTLS(bool enabled, const String& ca_override) {
   use_tls = enabled;
   if (!enabled) {
@@ -123,8 +146,11 @@ void MqttClient::onConnect(std::function<void()> callback) {
   callback_connect = callback;
 }
 
+// `a` es el tópico COMPLETO que llegó del broker; `b` es uno de los sufijos #define.
+// Se le antepone el prefijo del cuarto a `b` antes de comparar.
 bool MqttClient::isTopicEqual(const char* a, const char* b){
-  return strcmp(a, b) == 0;
+  if (a == nullptr || b == nullptr) return false;
+  return strcmp(a, fullTopic(b)) == 0;
 }
 
 bool MqttClient::isConnected() {
@@ -148,22 +174,25 @@ void MqttClient::subscribeRoutine() {
   if (mqttClient.connect(mqtt_username)) {
     DEBUG("connected, subscribing");
     
-    for (int i = 0; i < SUB_ARRAY_SIZE; i++) mqttClient.subscribe(topics[i]);
+    for (int i = 0; i < SUB_ARRAY_SIZE; i++) mqttClient.subscribe(fullTopic(topics[i]));
 
     DEBUG("subscribing done");
   } else DEBUG("not connected, subscribing aborted");
 }
 
+// `topic` es un SUFIJO (los #define de MqttClient.h): el prefijo del cuarto se antepone acá.
 void MqttClient::publishData(String topic, double value) {
   if (WiFi.status() != WL_CONNECTED) return;
   char value_buffer[32];
   snprintf(value_buffer, sizeof(value_buffer), "%.2f", value);
-  mqttClient.publish(topic.c_str(), value_buffer);
+  mqttClient.publish(fullTopic(topic.c_str()), value_buffer);
 }
 
 void MqttClient::publishData(String topic, String value) {
   if (WiFi.status() != WL_CONNECTED) return;
-  mqttClient.publish(topic.c_str(), value.c_str());
+  // fullTopic() usa el buffer compartido, así que se resuelve antes de tocar `value`.
+  const char* full = fullTopic(topic.c_str());
+  mqttClient.publish(full, value.c_str());
 }
 
 bool MqttClient::refreshMQTTStatus() {
@@ -192,14 +221,9 @@ int MqttClient::responseToInt(byte *value, size_t len) {
 }
 
 void MqttClient::DEBUG(const char *message){
-  // concat prefix to the message with the classname
-  char buffer[100];
-  snprintf(buffer, sizeof(buffer), "[MqttClient]: %s", message);
-  logger.println(buffer);
+  LOG_D(TAG_MQTT, "%s", message);
 }
 
 void MqttClient::ERROR(ErrorType error){
-  char buffer[100];
-  snprintf(buffer, sizeof(buffer), "[ERROR -> MqttClient]: %s", errorMessages[error]);
-  logger.println(buffer);
+  LOG_E(TAG_MQTT, "%s", errorMessages[error].c_str());
 }
