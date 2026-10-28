@@ -20,13 +20,29 @@ bool Logger::begin() {
     return true;
 }
 
-void Logger::setClock(const DateTime &now) {
+void Logger::setClock(const DateTime &now, bool trusted) {
     // Sección crítica mínima: epoch y ms son dos palabras y drain() las lee desde el
     // otro core. Sin esto un lote podría fecharse con un epoch nuevo y un ms viejo.
     portENTER_CRITICAL(&clock_mux);
-    clock_epoch = now.unixtime();
-    clock_ms    = millis();
+    clock_epoch   = now.unixtime();
+    clock_ms      = millis();
+    clock_trusted = trusted;
     portEXIT_CRITICAL(&clock_mux);
+}
+
+uint32_t Logger::epochAt(uint32_t ms, bool *trusted) {
+    portENTER_CRITICAL(&clock_mux);
+    const uint32_t epoch    = clock_epoch;
+    const uint32_t epoch_ms = clock_ms;
+    const bool     ok       = clock_trusted;
+    portEXIT_CRITICAL(&clock_mux);
+
+    if (trusted) *trusted = ok && epoch != 0;
+    if (epoch == 0) return 0;
+    // Con signo por lo mismo que en writeRecordToSD(): `ms` puede ser posterior a la
+    // instantánea (se encoló entre dos vueltas del loop).
+    const int32_t delta_ms = (int32_t)(ms - epoch_ms);
+    return (uint32_t)((int64_t)epoch + delta_ms / 1000);
 }
 
 const char* Logger::levelName(uint8_t level) {

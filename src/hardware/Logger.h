@@ -105,6 +105,7 @@ private:
     // sincronizar. El bus I2C tiene su propio mutex, pero esos miembros no.
     uint32_t clock_epoch = 0;   // 0 = todavía sin hora de pared
     uint32_t clock_ms    = 0;
+    bool     clock_trusted = false;
     portMUX_TYPE clock_mux = portMUX_INITIALIZER_UNLOCKED;
 
     void writeSerial(const LogRecord &rec);
@@ -128,7 +129,11 @@ public:
     void drain();
     // La llama el loop de control (core 1), que ya lee getDateTime() cada vuelta.
     // El drenador fecha con esta instantánea en vez de tocar el RTC desde el core 0.
-    void setClock(const DateTime &now);
+    // trusted = la hora vino de RTC/NTP (Controller::isTimeTrusted()).
+    void setClock(const DateTime &now, bool trusted = true);
+    // Convierte un millis() a hora de pared con la última instantánea. Devuelve 0 si
+    // todavía no hay hora. La usa EventLog para fechar sin tocar el RTC.
+    uint32_t epochAt(uint32_t ms, bool *trusted = nullptr);
     void setSerialLevel(LogLevel level) { serial_level = level; }
     void setSDLevel(LogLevel level)     { sd_level = level; }
     // Apagar Serial en equipos donde nadie enchufa un cable: en esta placa Serial

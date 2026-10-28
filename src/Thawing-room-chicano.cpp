@@ -130,6 +130,11 @@ void backgroundTasks(void* pvParameters) {
     // así el lazo de control (core 1) nunca se bloquea en I/O y no hay dos tasks
     // sobre el mismo bus SPI, con lo que tampoco hace falta un mutex.
     logger.drain();
+    // Mismo hilo que el Logger: EventLog también toca la SD (events.csv).
+    events.drain();
+    // Reinicios pedidos desde la web: se ejecutan acá, después de drenar, para que el
+    // evento "restart requested" llegue a flash antes de que se apague todo.
+    serviceRestart();
 
     // printStackUsage(); // Monitorea el uso de la pila
     vTaskDelay(50 / portTICK_PERIOD_MS);
@@ -141,6 +146,7 @@ void setup() {
   controller.init();
 
   logger.begin();   // cola del logger; el reloj se lo alimenta loop() con setClock()
+  events.begin();   // bitácora de eventos (SPIFFS ya montado por controller.init())
 
   // Defaults por si no hay config.txt: el equipo igual arranca y levanta su portal AP.
   char SSID[SSID_SIZE] = "";
@@ -199,12 +205,22 @@ void setup() {
   char dateBuffer[60];
   sprintf(dateBuffer, "Current date: %d:%d %d/%d", current_date.hour(), current_date.minute(), current_date.day(), current_date.month());
   logger.println(dateBuffer);
+  // Alimentar el reloj ya en setup: sin esto los eventos de arranque salen sin hora,
+  // porque loop() todavía no corrió.
+  logger.setClock(current_date, controller.isTimeTrusted());
+  logBootEvents(config_ok, online);
 
   StageState last_state = controller.getLastState();
   char stateBuffer[50];
   sprintf(stateBuffer, "Last state: %d %d", last_state.stage, last_state.step);
   logger.println(stateBuffer);
-  if (last_state.stage != IDLE) currentState = last_state;
+  if (last_state.stage != IDLE) {
+    currentState = last_state;
+    events.setStage(last_state.stage);
+    events.cycleResume(SRC_SYSTEM, "Resumed Stage %d after controller restart", (int)last_state.stage);
+  } else {
+    events.cycleClear();
+  }
 
   // Solo levantar MQTT si estamos online (estación con WiFi). En modo AP/portal
   // IP_ADDRESS puede estar vacío y no hay red: intentar conectar sería un gasto inútil
@@ -289,7 +305,7 @@ void loop() {
   // Se le pasa el reloj al logger desde acá, que es donde ya se lee. El drenador corre
   // en el core 0 y así no necesita tocar el RTC: sin I2C compartido entre cores y sin
   // escribir el estado del RTC de Controller desde dos tasks.
-  logger.setClock(current_date);
+  logger.setClock(current_date, controller.isTimeTrusted());
 
   // if (!controller.isRTCConnected()) {  
   //   logger.println("RTC not connected"); 
@@ -299,6 +315,7 @@ void loop() {
   if(controller.isWiFiConnected()) {
     mqtt.loop();
   }
+  watchBrokerLink();
 
   updateTemperature();
 
@@ -327,15 +344,18 @@ bool handleInputs(button_type override) {
   button_type button = NONE;
   bool pressed_btn = false;
 
+  // override solo llega desde el callback MQTT (SCADA). Si en la misma vuelta además se
+  // soltó un botón físico, gana el botón, y el origen tiene que decir eso.
+  EventSource source = override ? SRC_REMOTE : SRC_MANUAL;
   if (override) pressed_btn = button = override;
 
-  if      (d_start_button.released()) button = D_START;
-  else if (start_btn.released())      button = START;
-  else if (stop_btn.released())       button = STOP;
+  if      (d_start_button.released()) { button = D_START; source = SRC_MANUAL; }
+  else if (start_btn.released())      { button = START;   source = SRC_MANUAL; }
+  else if (stop_btn.released())       { button = STOP;    source = SRC_MANUAL; }
 
-  if      (button == D_START)         setStage(STAGE1);
-  else if (button == START)           setStage(STAGE2);
-  else if (button == STOP)            stopRoutine(); 
+  if      (button == D_START)         setStage(STAGE1, source);
+  else if (button == START)           setStage(STAGE2, source);
+  else if (button == STOP)            stopRoutine(source); 
 
   return !pressed_btn;
 }
@@ -445,8 +465,11 @@ void handleStage1(){
     char buf[60];
     snprintf(buf, sizeof(buf), "Stage2 time reached (overdue: %ld min)", overdue);
     logger.println(buf);
+    char reason[48];
+    if (overdue > 1) snprintf(reason, sizeof(reason), "scheduled time reached, %ld min late", overdue);
+    else             snprintf(reason, sizeof(reason), "scheduled time reached");
     stage_1.destroy();
-    setStage(STAGE2);
+    setStage(STAGE2, SRC_AUTO, reason);
   }
   //  Stage 1 Process 
 }
@@ -608,8 +631,10 @@ void handleStage2(){
   bool isReadyForStage3 = TS_F >= temp_set.ts && TC_F >= temp_set.tc;
 
   if (isReadyForStage3 ){
+    char reason[64];
+    snprintf(reason, sizeof(reason), "Ts %.1f >= %.1f and Tc %.1f >= %.1f", TS_F, temp_set.ts, TC_F, temp_set.tc);
     stage_2.destroy();
-    setStage(STAGE3);
+    setStage(STAGE3, SRC_AUTO, reason);
   } 
   //  Stage 2 Process
 }
@@ -701,7 +726,7 @@ void idle(){
 }
 
 //// fct Callback ==> RECEIVE MQTT MESSAGES ////////////////////////////////////////////////////////////////////
-void callback(char *topic, byte *payload, unsigned int len) {
+static void handleMqttMessage(char *topic, byte *payload, unsigned int len) {
   char buffer[80];
   sprintf(buffer, "Message arrived [%s]", topic);
   logger.println(buffer);
@@ -1004,7 +1029,131 @@ void callback(char *topic, byte *payload, unsigned int len) {
   if(update_default_parameters) controller.updateDefaultParameters(stage1_params, stage2_params, stage3_params, room, temp_set);
 }
 
-void stopRoutine() {
+// ---- Parámetros que puede mover el SCADA ----
+// En vez de tocar los ~30 bloques del callback, se toma una foto de los valores antes
+// de procesar el mensaje y se compara después: solo lo que cambió de verdad queda en
+// la bitácora, aunque el SCADA reenvíe el mismo valor.
+struct WatchedParam { const char* name; const char* unit; char kind; void* ptr; };
+static const WatchedParam watched_params[] = {
+  {"Stage 2 start hour",          "",    'u', &stage2_hour},
+  {"Stage 2 start minute",        "",    'u', &stage2_minute},
+  {"Stage 2 start day",           "",    'u', &stage2_day},
+  {"Stage 2 start month",         "",    'u', &stage2_month},
+  {"Stage 1 F1 on time",          " min", 'f', &stage1_params.fanOnTime},
+  {"Stage 1 F1 off time",         " min", 'f', &stage1_params.fanOffTime},
+  {"Stage 1 F1 reverse on time",  " min", 'f', &stage1_params.fanRevONTime},
+  {"Stage 1 S1 on time",          " min", 'f', &stage1_params.sprinklerOnTime},
+  {"Stage 1 S1 off time",         " min", 'f', &stage1_params.sprinklerOffTime},
+  {"Stage 2 F1 on time",          " min", 'f', &stage2_params.fanOnTime},
+  {"Stage 2 F1 off time",         " min", 'f', &stage2_params.fanOffTime},
+  {"Stage 2 F1 reverse on time",  " min", 'f', &stage2_params.fanRevONTime},
+  {"Stage 2 S1 on time",          " min", 'f', &stage2_params.sprinklerOnTime},
+  {"Stage 2 S1 off time",         " min", 'f', &stage2_params.sprinklerOffTime},
+  {"Stage 3 F1 on time",          " min", 'f', &stage3_params.fanOnTime},
+  {"Stage 3 F1 off time",         " min", 'f', &stage3_params.fanOffTime},
+  {"Stage 3 F1 reverse on time",  " min", 'f', &stage3_params.fanRevONTime},
+  {"Stage 3 S1 on time",          " min", 'f', &stage3_params.sprinklerOnTime},
+  {"Stage 3 S1 off time",         " min", 'f', &stage3_params.sprinklerOffTime},
+  {"A",                           "",    'f', &room.A},
+  {"B",                           "",    'f', &room.B},
+  {"PID Kp",                      "",    'd', &Kp},
+  {"PID Ki",                      "",    'd', &Ki},
+  {"PID Kd",                      "",    'd', &Kd},
+  {"PID coef forward",            "",    'u', &room.coef_pid_fwd},
+  {"PID coef reverse",            "",    'u', &room.coef_pid_rev},
+  {"Ts set-point",                " C",  'f', &temp_set.ts},
+  {"Tc set-point",                " C",  'f', &temp_set.tc},
+  {"Ts from IR (chooseTs)",       "",    'b', &is_rts_ir},
+};
+static const size_t WATCHED_PARAM_COUNT = sizeof(watched_params) / sizeof(watched_params[0]);
+
+static double readParam(const WatchedParam &p) {
+  switch (p.kind) {
+    case 'u': return *(const uint8_t*)p.ptr;
+    case 'b': return *(const bool*)p.ptr ? 1 : 0;
+    case 'f': return *(const float*)p.ptr;
+    default:  return *(const double*)p.ptr;
+  }
+}
+
+void callback(char *topic, byte *payload, unsigned int len) {
+  double before[WATCHED_PARAM_COUNT];
+  for (size_t i = 0; i < WATCHED_PARAM_COUNT; i++) before[i] = readParam(watched_params[i]);
+  const bool lora_tc_before = controller.isLoraTc();
+  const bool ts_ir_before   = controller.isTsContactLess();
+
+  handleMqttMessage(topic, payload, len);
+
+  for (size_t i = 0; i < WATCHED_PARAM_COUNT; i++) {
+    const double after = readParam(watched_params[i]);
+    if (fabs(after - before[i]) < 1e-6) continue;
+    events.emit(EV_PARAM, SRC_REMOTE, "%s: %g -> %g%s",
+                watched_params[i].name, before[i], after, watched_params[i].unit);
+  }
+  if (controller.isLoraTc() != lora_tc_before) {
+    events.emit(EV_PARAM, SRC_REMOTE, "Tc source: %s", controller.isLoraTc() ? "LoRa" : "wired probe");
+  }
+  if (controller.isTsContactLess() != ts_ir_before) {
+    events.emit(EV_PARAM, SRC_REMOTE, "Ts source: %s", controller.isTsContactLess() ? "IR sensor" : "PT-100 probe");
+  }
+}
+
+// ---- Enlace con el SCADA ----
+// Un corte corto de WiFi/broker es normal (el cliente reconecta solo): solo se registra
+// si dura más de un minuto, y la recuperación solo si antes se registró el corte.
+void watchBrokerLink() {
+  static uint32_t down_since = 0;
+  static bool was_up = false, reported = false;
+  if (controller.isAPMode()) return;
+
+  if (controller.isWiFiConnected() && mqtt.isConnected()) {
+    if (reported) {
+      events.emit(EV_SYSTEM, SRC_SYSTEM, "SCADA connection restored after %lu min",
+                  (unsigned long)((millis() - down_since) / 60000UL));
+    }
+    was_up = true; down_since = 0; reported = false;
+    return;
+  }
+  if (!was_up) return;   // todavía no conectó nunca en este arranque: no es un corte
+  if (down_since == 0) { down_since = millis(); return; }
+  if (!reported && millis() - down_since >= 60000UL) {
+    reported = true;
+    events.emit(EV_ALERT, SRC_SYSTEM, controller.isWiFiConnected()
+                ? "Lost connection to the MQTT broker: SCADA cannot see or control the room"
+                : "Wi-Fi lost: SCADA cannot see or control the room");
+  }
+}
+
+// ---- Eventos de arranque ----
+void logBootEvents(bool config_ok, bool online) {
+  const esp_reset_reason_t reason = esp_reset_reason();
+  const char* cause = "unknown cause";
+  bool abnormal = false;
+  switch (reason) {
+    case ESP_RST_POWERON:  cause = "power-on";                           break;
+    case ESP_RST_SW:       cause = "software restart";                   break;
+    case ESP_RST_PANIC:    cause = "crash (panic)";          abnormal = true; break;
+    case ESP_RST_INT_WDT:  cause = "interrupt watchdog";     abnormal = true; break;
+    case ESP_RST_TASK_WDT: cause = "task watchdog";          abnormal = true; break;
+    case ESP_RST_WDT:      cause = "watchdog";               abnormal = true; break;
+    case ESP_RST_BROWNOUT: cause = "brownout (low voltage)"; abnormal = true; break;
+    default: break;
+  }
+  events.emit(EV_SYSTEM, SRC_SYSTEM, "Controller started (%s) - firmware v%s, built %s %s",
+              cause, VERSION, __DATE__, __TIME__);
+  if (abnormal) events.emit(EV_ERROR, SRC_SYSTEM, "Unexpected restart: %s", cause);
+
+  if (!config_ok)      events.emit(EV_ERROR, SRC_SYSTEM, "No valid config.txt: configuration portal started");
+  else if (!online)    events.emit(EV_ALERT, SRC_SYSTEM, "Wi-Fi unavailable at boot: configuration portal started");
+
+  if (!controller.isRTCConnected())       events.emit(EV_ERROR, SRC_SYSTEM, "RTC not detected: using fallback clock");
+  else if (!controller.isTimeTrusted())   events.emit(EV_ALERT, SRC_SYSTEM, "Clock not set: event times may be wrong");
+
+  if (!logger.hasSD()) events.emit(EV_ALERT, SRC_SYSTEM, "No SD card: only the last %d events are kept", EVENT_LOG_CAPACITY);
+}
+
+void stopRoutine(EventSource source) {
+  const SystemState from = currentState.stage;
   LOG_I(TAG_STAGE, "PARO DE PROCESO iniciado (etapa %d)", (int)currentState.stage);
   controller.writeDigitalOutput(VALVE_IO, LOW);
   controller.turnOnFan(false);
@@ -1015,7 +1164,13 @@ void stopRoutine() {
 
   mqtt.publishData(m_F1, false);
   mqtt.publishData(m_S1, false);
-  setStage(IDLE);
+  setStage(IDLE, source);
+
+  // STOP en etapa 3 es el final normal del ciclo (la etapa 3 no termina sola); en
+  // cualquier otra etapa es un paro. STOP con el cuarto en reposo no registra nada.
+  if      (from == STAGE3) events.cycleEnd(source, true,  "Process finished");
+  else if (from == ERROR)  events.cycleEnd(source, false, "Process stopped after an error");
+  else if (from != IDLE)   events.cycleEnd(source, false, "Process stopped during Stage %d", (int)from);
 
   stage_1.destroy();
   stage_2.destroy();
@@ -1103,7 +1258,11 @@ bool updateSensorReading(float raw, float &value, float lo, float hi, const char
   const bool valid = raw >= lo && raw <= hi;
   if (valid) {
     value = raw;
-    if (fault) { fault = false; sendSensorFault(name, false, raw, channel); }  // recuperación
+    if (fault) {                                    // recuperación
+      fault = false;
+      sendSensorFault(name, false, raw, channel);
+      events.emit(EV_ALERT, SRC_SYSTEM, "Sensor %s recovered (%.1f C)", name, raw);
+    }
     return true;
   }
 
@@ -1111,6 +1270,8 @@ bool updateSensorReading(float raw, float &value, float lo, float hi, const char
     fault = true;
     last_report = millis();
     sendSensorFault(name, true, raw, channel);
+    events.emit(EV_ALERT, SRC_SYSTEM, "Sensor %s fault: %s (reading %.1f C, last good value kept)",
+                name, classifyFault(channel, true), raw);
     return false;
   }
 
@@ -1141,7 +1302,8 @@ void updateTemperature() {
   getTempAvg();
 }
 
-void setStage(SystemState stage) {
+void setStage(SystemState stage, EventSource source, const char* reason) {
+  const SystemState from = currentState.stage;
   if (currentState.stage > IDLE && stage == IDLE) logger.setFileName(DEFAULT_LOG_FILE);
   else if (currentState.stage == IDLE && stage > IDLE) logger.setFileName(controller.getDateTime());
   
@@ -1151,6 +1313,24 @@ void setStage(SystemState stage) {
 
   currentState.stage = stage;
   currentState.step = 0;
+
+  events.setStage(stage);
+  if (stage == IDLE) {
+    // El paro / fin lo registra stopRoutine(), que sabe en qué etapa estaba.
+  } else if (from == IDLE || from == ERROR) {
+    if (stage == STAGE1) {
+      events.cycleStart(source, "Delayed start: Stage 1, Stage 2 scheduled for %02u:%02u on %02u/%02u",
+                        stage2_hour, stage2_minute, stage2_day, stage2_month);
+    } else {
+      events.cycleStart(source, "Process started directly in Stage %d", (int)stage);
+    }
+  } else if (from == stage) {
+    events.emit(EV_PROCESS, source, "Stage %d restarted", (int)stage);
+  } else if (reason) {
+    events.emit(EV_PROCESS, source, "Stage %d -> Stage %d (%s)", (int)from, (int)stage, reason);
+  } else {
+    events.emit(EV_PROCESS, source, "Stage %d -> Stage %d", (int)from, (int)stage);
+  }
 
   mqtt.publishData(STAGE, stage);
   controller.saveLastState(currentState);

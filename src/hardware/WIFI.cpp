@@ -8,6 +8,20 @@ AsyncWebServer server(80);
 // si estamos en modo Access Point y deban redirigir al portal cautivo.
 static bool s_ap_mode = false;
 
+static volatile uint32_t s_restart_at = 0;   // millis() objetivo; 0 = sin reinicio pedido
+
+void scheduleRestart(uint32_t delay_ms) {
+  const uint32_t at = millis() + delay_ms;
+  s_restart_at = at ? at : 1;
+}
+
+void serviceRestart() {
+  if (s_restart_at == 0 || (int32_t)(millis() - s_restart_at) < 0) return;
+  events.drain();
+  logger.drain();
+  ESP.restart();
+}
+
 static void handle_update_progress_cb(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
   if (!index){
     int cmd = (filename.indexOf("spiffs") > -1) ? U_SPIFFS : U_FLASH;
@@ -92,8 +106,10 @@ void handleFileUpload(AsyncWebServerRequest *request, String filename, size_t in
   if (final) {
     if (ConfigStore::write(CONFIG_FILE, upload_buffer)) {
       Serial.printf("Archivo subido con éxito: %s\n", filename.c_str());
+      events.emit(EV_SYSTEM, SRC_WEB, "config.txt replaced by upload (%s), applies on restart", filename.c_str());
     } else {
       Serial.println("Error: config subido no es JSON válido, descartado");
+      events.emit(EV_ALERT, SRC_WEB, "Uploaded config rejected: not valid JSON (%s)", filename.c_str());
     }
     upload_buffer = "";
   }
@@ -107,7 +123,7 @@ bool WIFI::validateJSON(const String& jsonString) {
 }
 
 
-void WIFI::updateJsonFromForm(AsyncWebServerRequest *request, JsonVariant json) {
+void WIFI::updateJsonFromForm(AsyncWebServerRequest *request, JsonVariant json, std::vector<String> *changes) {
   int params = request->params();
   for (int i = 0; i < params; i++) {
     const AsyncWebParameter* p = request->getParam(i);
@@ -126,6 +142,22 @@ void WIFI::updateJsonFromForm(AsyncWebServerRequest *request, JsonVariant json) 
         // Handle the array index if it exists
         String val = p->value();
         const bool valIsBool = isBoolValue(val);
+
+        if (changes) {
+          const bool is_index = tokens[j][0] == '[';
+          const String prev = is_index
+              ? cur[tokens[j].substring(1, tokens[j].length() - 1).toInt()].as<String>()
+              : cur[tokens[j]].as<String>();
+          if (prev != val) {
+            String key = keyPath;
+            key.replace("|", ".");
+            // Contraseñas: se registra que cambiaron, nunca el valor.
+            String upper = key;
+            upper.toUpperCase();
+            if (upper.indexOf("PASS") >= 0) changes->push_back(key + " changed");
+            else                            changes->push_back(key + ": " + prev + " -> " + val);
+          }
+        }
         
         if (tokens[j][0] == '[') {
           int index = tokens[j].substring(1, tokens[j].length() - 1).toInt();
@@ -276,6 +308,32 @@ void WIFI::setUpWebServer(bool brigeSerial){
     request->send(200, "text/html", setLayOutInfo(LOGS_HTML, "//{{LOGS}}", log_list));
   });
 
+  // Bitácora de eventos. Sin `checkAuth` capturado: ese lambda es local de esta función
+  // y estos handlers corren cuando ya retornó. Se autentica directo contra los miembros.
+  server.on("/events", HTTP_GET, [this](AsyncWebServerRequest *request) {
+    if (!request->authenticate(www_username, www_password)) return request->requestAuthentication();
+    request->send(200, "text/html", setLayOutInfo(EVENTS_HTML));
+  });
+
+  // GET /api/events?before=<seq>&after=<seq>&limit=<n>  -> más nuevos primero
+  server.on("/api/events", HTTP_GET, [this](AsyncWebServerRequest *request) {
+    if (!request->authenticate(www_username, www_password)) return request->requestAuthentication();
+    auto param = [request](const char* name) -> uint32_t {
+      return request->hasParam(name) ? (uint32_t)request->getParam(name)->value().toInt() : 0;
+    };
+    uint32_t limit = param("limit");
+    if (limit == 0 || limit > 250) limit = 250;
+
+    AsyncResponseStream *res = request->beginResponseStream("application/json");
+    res->addHeader("Cache-Control", "no-store");
+    if (!events.writeJSON(*res, param("before"), param("after"), (uint16_t)limit)) {
+      delete res;
+      request->send(503, "text/plain", "Event log busy, try again");
+      return;
+    }
+    request->send(res);
+  });
+
   server.onNotFound([](AsyncWebServerRequest *request) {
       // En modo AP, cualquier URL desconocida redirige al portal (captive portal):
       // así el navegador/teléfono abre solo la página de configuración.
@@ -298,13 +356,17 @@ void WIFI::setUpWebServer(bool brigeSerial){
   server.on("/reset", HTTP_POST, [&checkAuth](AsyncWebServerRequest *request) {
     if(!checkAuth(request)) return;
     request->send(200, "text/plain", "Resetting...");
-    ESP.restart(); 
+    events.emit(EV_SYSTEM, SRC_WEB, "Controller restart requested from the web interface");
+    scheduleRestart();
   });
 
   server.on("/update", HTTP_POST, [&checkAuth]( AsyncWebServerRequest *request) {
     if(!checkAuth(request)) return;
-    request->send(200, "text/plain", (Update.hasError()) ? "FAIL" : "OK");
-    ESP.restart(); 
+    const bool failed = Update.hasError();
+    request->send(200, "text/plain", failed ? "FAIL" : "OK");
+    if (failed) events.emit(EV_ERROR, SRC_WEB, "Firmware update failed, restarting on the current firmware");
+    else        events.emit(EV_SYSTEM, SRC_WEB, "Firmware update installed, restarting");
+    scheduleRestart();
   }, handle_update_progress_cb);
 
     // Manejar la descarga de archivos
@@ -404,7 +466,8 @@ void WIFI::setUpWebServer(bool brigeSerial){
     }
 
     // Actualizar el JSON con los nuevos valores del cuerpo
-    updateJsonFromForm(request, doc);
+    std::vector<String> changes;
+    updateJsonFromForm(request, doc, &changes);
 
     // Imprimir el documento actualizado en el Serial
     Serial.println("Printing updated doc:");
@@ -416,6 +479,17 @@ void WIFI::setUpWebServer(bool brigeSerial){
     serializeJson(doc, out);
     if (ConfigStore::write(fileToUpdate, out)) {
       request->send(200, "text/plain", "Configuration updated successfully");
+      // Estos archivos se leen al arrancar: el cambio rige recién tras reiniciar.
+      const bool is_config = strcmp(fileToUpdate, CONFIG_FILE) == 0;
+      const char* file = is_config ? "config.txt" : "defaultParameters.txt";
+      const size_t shown = changes.size() > 12 ? 12 : changes.size();
+      for (size_t i = 0; i < shown; i++) {
+        events.emit(is_config ? EV_SYSTEM : EV_PARAM, SRC_WEB, "%s %s (on restart)", file, changes[i].c_str());
+      }
+      if (changes.size() > shown) {
+        events.emit(is_config ? EV_SYSTEM : EV_PARAM, SRC_WEB, "%s: %u more values changed",
+                    file, (unsigned)(changes.size() - shown));
+      }
     } else {
       request->send(500, "text/plain", "Failed to write to file");
     }

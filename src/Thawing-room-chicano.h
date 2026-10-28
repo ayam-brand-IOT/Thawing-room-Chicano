@@ -9,6 +9,7 @@
 #include "MqttClient.h"
 #include <TaskScheduler.h>
 #include "./hardware/Logger.h"
+#include "./hardware/EventLog.h"
 #include "config.h"
 #include "./hardware/Controller.h"
 #include "types.h"
@@ -26,9 +27,10 @@ const int stageLedPins[NUM_STATES] = {
 //---- Function declaration ----/////////////////////////////////////////////////////////////////////////////
 
 void handleStage();
-void setStage(SystemState Stage);
+// source/reason alimentan la bitácora de eventos: quién movió la etapa y por qué.
+void setStage(SystemState Stage, EventSource source = SRC_AUTO, const char* reason = nullptr);
 
-void stopRoutine();
+void stopRoutine(EventSource source = SRC_SYSTEM);
 
 void initStage1();
 void initStage2();
@@ -48,6 +50,7 @@ void asyncLoopSprinkler(uint32_t &timer, uint32_t offTime, uint32_t onTime);
 
 void getTempAvg();
 void updateTemperature();
+// override viene del SCADA por MQTT; los botones físicos se leen adentro.
 bool handleInputs(button_type override = NONE);
 void callback(char *topic, byte *payload, unsigned int len);
 bool hasIntervalPassed(uint32_t &previousMillis, uint32_t interval, bool to_min = false);
@@ -75,6 +78,10 @@ void publishAdcDiagnostics();
 void turn_on_flush_routine();
 void turn_off_flush_routine();
 void ntp_sync_callback();  // forward declaration — definida debajo de controller
+
+// Bitácora de eventos (EventLog): arranque del equipo y enlace con el SCADA.
+void logBootEvents(bool config_ok, bool online);
+void watchBrokerLink();
 
 
 //---- timing settings -----////////////////////////////////////////////////////////////////////////////////

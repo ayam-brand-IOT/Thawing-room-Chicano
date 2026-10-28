@@ -14,6 +14,8 @@
 #include <ArduinoJson.h>
 #include "./hardware/Logger.h"
 #include "resources/WebFiles.h"
+#include "EventLog.h"
+#include <vector>
 
 #define SSID_SIZE 32
 #define PASSWORD_SIZE 64
@@ -79,8 +81,15 @@ class WIFI {
     void ERROR(ErrorType error);
     bool validateJSON(const String& jsonString);
     String generateHTMLForJson(JsonVariant json, String path = "");
-    void updateJsonFromForm(AsyncWebServerRequest *request, JsonVariant json);
+    // changes (opcional) recibe "clave: antes -> después" de cada valor que cambió.
+    void updateJsonFromForm(AsyncWebServerRequest *request, JsonVariant json, std::vector<String> *changes = nullptr);
     String setLayOutInfo(const char* site, String extra_prop = "", String value = "");
 
 };
+// Reinicio diferido. Los handlers web no reinician en el acto: piden el reinicio y
+// backgroundTasks lo ejecuta después de drenar logs y eventos, así lo que se acaba de
+// registrar (y la respuesta HTTP) llega a salir antes de que se apague todo.
+void scheduleRestart(uint32_t delay_ms = 1500);
+void serviceRestart();
+
 #endif
