@@ -27,6 +27,19 @@ typedef enum {
   TC_TYPE = 2
 } SensorProbes;
 
+// ==================== FUENTE DE LA HORA ====================
+// De dónde salió el último getDateTime(). Sin esto el reloj nunca puede decir "no sé
+// qué hora es": cuando no hay ninguna fuente devuelve la fecha de COMPILACIÓN, que pasa
+// la validación de rango y se ve perfectamente plausible. Quien programa un arranque
+// diferido necesita poder distinguir eso.
+typedef enum {
+  TIME_SRC_NONE = 0,   // nunca hubo hora válida -> semilla de compilación. NO confiable.
+  TIME_SRC_EXTERNAL,   // DS3231 (TCXO, ~2 ppm)
+  TIME_SRC_INTERNAL,   // RTC interno del ESP32 (oscilador RC, deriva con temperatura)
+  TIME_SRC_MILLIS,     // última hora válida + delta de millis() (cristal de 40 MHz)
+  TIME_SRC_UNKNOWN = 255
+} TimeSource;
+
 // ==================== ERROR TYPES ====================
 
 typedef enum {

@@ -57,6 +57,8 @@ float TI = 0, TI_F = 0;  //Ti optional
 // Flags de fallo por sensor (punto 1): true = última lectura fuera de rango físico.
 // Mientras true, se conserva el último valor bueno y ya se publicó la alarma.
 bool ta_fault = false, ts_fault = false, tc_fault = false;
+// millis() del último aviso de cada sensor, para el re-aviso periódico mientras falla.
+uint32_t ta_fault_report = 0, ts_fault_report = 0, tc_fault_report = 0;
 
 // ########################### Buffer ##########################
 SensorBuffer sensorTs(BUFFER_SIZE);  // Crear una instancia para el sensor Ts
@@ -92,17 +94,23 @@ void printStackUsage() {
 }
 
 // ---- Log the cause of the previous reset (called after logger is ready) ----
+// Es el registro de "por qué nos reiniciamos": tiene que sobrevivir en la tarjeta, así
+// que va a INFO/CRIT y no por println() (que queda en DEBUG y solo llega a Serial).
 void logResetReason() {
+  // Sello del binario. Con despliegue manual, tres personas y 9 cuartos, "¿qué firmware
+  // tiene puesto este equipo?" es una pregunta constante; que la conteste el propio log.
+  LOG_I(TAG_APP, "[BOOT] Firmware compilado " __DATE__ " " __TIME__);
+
   const esp_reset_reason_t reason = esp_reset_reason();
   switch (reason) {
-    case ESP_RST_POWERON:  logger.println(F("[BOOT] Power-on reset"));            break;
-    case ESP_RST_SW:       logger.println(F("[BOOT] Software restart"));           break;
-    case ESP_RST_PANIC:    logger.println(F("[CRITICAL] Reset by panic / crash")); break;
-    case ESP_RST_INT_WDT:  logger.println(F("[CRITICAL] Reset by interrupt WDT")); break;
-    case ESP_RST_TASK_WDT: logger.println(F("[CRITICAL] Reset by task WDT"));     break;
-    case ESP_RST_WDT:      logger.println(F("[CRITICAL] Reset by WDT (other)"));   break;
-    case ESP_RST_BROWNOUT: logger.println(F("[CRITICAL] Reset by brownout"));      break;
-    default:               logger.println(F("[BOOT] Reset reason: unknown"));      break;
+    case ESP_RST_POWERON:  LOG_I(TAG_APP, "[BOOT] Arranque por energia");            break;
+    case ESP_RST_SW:       LOG_I(TAG_APP, "[BOOT] Reinicio por software");           break;
+    case ESP_RST_PANIC:    LOG_C(TAG_APP, "[BOOT] Reinicio por panic / crash");      break;
+    case ESP_RST_INT_WDT:  LOG_C(TAG_APP, "[BOOT] Reinicio por interrupt WDT");      break;
+    case ESP_RST_TASK_WDT: LOG_C(TAG_APP, "[BOOT] Reinicio por task WDT");           break;
+    case ESP_RST_WDT:      LOG_C(TAG_APP, "[BOOT] Reinicio por WDT (otro)");         break;
+    case ESP_RST_BROWNOUT: LOG_C(TAG_APP, "[BOOT] Reinicio por brownout (baja tension)"); break;
+    default:               LOG_I(TAG_APP, "[BOOT] Causa de reinicio desconocida (%d)", (int)reason); break;
   }
 }
 
@@ -117,6 +125,12 @@ void backgroundTasks(void* pvParameters) {
         controller.loopOTA();
       }
     }
+
+    // Único punto del firmware que escribe la SD de logs. Vive acá a propósito:
+    // así el lazo de control (core 1) nunca se bloquea en I/O y no hay dos tasks
+    // sobre el mismo bus SPI, con lo que tampoco hace falta un mutex.
+    logger.drain();
+
     // printStackUsage(); // Monitorea el uso de la pila
     vTaskDelay(50 / portTICK_PERIOD_MS);
   }
@@ -125,6 +139,8 @@ void backgroundTasks(void* pvParameters) {
 
 void setup() {
   controller.init();
+
+  logger.begin();   // cola del logger; el reloj se lo alimenta loop() con setClock()
 
   // Defaults por si no hay config.txt: el equipo igual arranca y levanta su portal AP.
   char SSID[SSID_SIZE] = "";
@@ -194,6 +210,9 @@ void setup() {
   // IP_ADDRESS puede estar vacío y no hay red: intentar conectar sería un gasto inútil
   // (con TLS además se cuelga ~30s en el handshake hacia un host inalcanzable).
   if (online) {
+    // ANTES de connect(): connect() ya suscribe, y la suscripción necesita el prefijo.
+    // PREFIX_TOPIC viene vacío si config.txt no trae "TOPIC" -> queda DEFAULT_TOPIC_PREFIX.
+    mqtt.setTopicPrefix(PREFIX_TOPIC);
     mqtt.setCallback(callback);
     mqtt.onConnect(onMQTTConnect);
     mqtt.setTLS(controller.isTLSEnabled());  // verifica el broker contra el CA embebido (mqtt_certs.h)
@@ -221,6 +240,19 @@ void setup() {
   air_in_feed_PID.SetMode(AUTOMATIC);
   air_in_feed_PID.SetSampleTime(3000);
   air_in_feed_PID.SetTunings(Kp, Ki, Kd);
+
+  // El rango del PID (0-255 por defecto de la librería, no se llama a SetOutputLimits)
+  // no coincide con el del PWM (RESOLUTION bits). Hoy eso hace que el infeed de aire
+  // trabaje al tope, que es como opera la planta a propósito. NO se corrige acá: se
+  // deja registrado para que el día que cambie -por ejemplo si una versión nueva del
+  // core empieza a recortar el duty- se vea en el log en vez de perseguirlo a ciegas.
+  {
+    const uint32_t pwm_max = (1UL << RESOLUTION) - 1UL;
+    if (pwm_max < 255UL) {
+      LOG_W(TAG_APP, "PID 0-255 contra PWM de %u bits (max %lu): la salida de aire satura",
+            (unsigned)RESOLUTION, (unsigned long)pwm_max);
+    }
+  }
 
   delay(750);
 
@@ -251,8 +283,13 @@ void setUpWatchdog() {
 void loop() {
   esp_task_wdt_reset();   // alimentar el watchdog en cada iteración (punto 4)
   runner.execute();
-  // if is for testing porpuse comment this "if" and replace DateTime "now" for: DateTime now(__DATE__, __TIME__); 
+  // if is for testing porpuse comment this "if" and replace DateTime "now" for: DateTime now(__DATE__, __TIME__);
   DateTime current_date = controller.getDateTime();
+
+  // Se le pasa el reloj al logger desde acá, que es donde ya se lee. El drenador corre
+  // en el core 0 y así no necesita tocar el RTC: sin I2C compartido entre cores y sin
+  // escribir el estado del RTC de Controller desde dos tasks.
+  logger.setClock(current_date);
 
   // if (!controller.isRTCConnected()) {  
   //   logger.println("RTC not connected"); 
@@ -691,7 +728,7 @@ void callback(char *topic, byte *payload, unsigned int len) {
     if (!controller.isLoraTc()) return;
 
     const float tc_raw = mqtt.responseToFloat(payload, len);
-    updateSensorReading(tc_raw, TC, TC_MIN, TC_MAX, "TC", tc_fault);
+    updateSensorReading(tc_raw, TC, TC_MIN, TC_MAX, "TC", tc_fault, ADC_MEDIAN_NO_PIN, tc_fault_report);
 
     char buf[20];
     sprintf(buf, "%.2f", TC);
@@ -968,7 +1005,7 @@ void callback(char *topic, byte *payload, unsigned int len) {
 }
 
 void stopRoutine() {
-  logger.println("PROCESS STOP INITIATED");
+  LOG_I(TAG_STAGE, "PARO DE PROCESO iniciado (etapa %d)", (int)currentState.stage);
   controller.writeDigitalOutput(VALVE_IO, LOW);
   controller.turnOnFan(false);
   controller.writeAnalogOutput(AIR_PWM, 0);
@@ -992,25 +1029,99 @@ void stopRoutine() {
 
 // Publica la alarma de sensor a MQTT y la loguea. fault=true al detectar el fallo,
 // fault=false al recuperarse. `raw` es la lectura cruda que disparó el evento.
-void sendSensorFault(const char* sensor, bool fault, float raw) {
-  char msg[80];
-  snprintf(msg, sizeof(msg), "{\"sensor\":\"%s\",\"fault\":%s,\"raw\":%.2f}",
-           sensor, fault ? "true" : "false", raw);
+// OJO, cambio de formato: "raw" ahora son CUENTAS del ADC y los °C van en "temp".
+// Antes "raw" traía °C, que es justo el dato que NO sirve para diagnosticar la cadena
+// 4-20 mA (un lazo abierto y una sonda genuinamente fría dan ambos temperaturas bajas;
+// solo las cuentas los distinguen). `channel` = ADC_MEDIAN_NO_PIN cuando el valor no
+// viene del ADC (Ts por IR, Tc por LoRa): ahí no hay cuentas que publicar.
+// Clasifica la falla a partir de las CUENTAS del ADC. Es lo que separa "se cortó el
+// cable" de "hace frío de verdad", que hasta ahora se veían idénticos.
+//   < ~819 cuentas -> por debajo de 4 mA: un lazo 4-20 mA vivo no puede estar ahí
+//   = 4095         -> tope de escala: transmisor pegado
+const char* classifyFault(uint8_t channel, bool fault) {
+  if (!fault) return "OK";
+  if (channel == ADC_MEDIAN_NO_PIN) return "OUT_OF_RANGE";  // no viene del ADC (IR / LoRa)
+
+  const Controller::AdcDiag d = controller.getAdcDiag(channel);
+  if (!d.valid)               return "NO_DATA";
+  if (d.filtered < ADC_LOOP_MIN_COUNTS) return "OPEN_LOOP";
+  if (d.filtered >= ADC__RESOLUTION)    return "SATURATED";
+  return "OUT_OF_RANGE";
+}
+
+void sendSensorFault(const char* sensor, bool fault, float temp, uint8_t channel) {
+  const char* reason = classifyFault(channel, fault);
+  char msg[160];
+
+  if (channel == ADC_MEDIAN_NO_PIN) {
+    snprintf(msg, sizeof(msg), "{\"sensor\":\"%s\",\"fault\":%s,\"reason\":\"%s\",\"temp\":%.2f}",
+             sensor, fault ? "true" : "false", reason, temp);
+  } else {
+    const Controller::AdcDiag d = controller.getAdcDiag(channel);
+    snprintf(msg, sizeof(msg),
+             "{\"sensor\":\"%s\",\"fault\":%s,\"reason\":\"%s\",\"temp\":%.2f,\"raw\":%u,\"med\":%u,\"fails\":%u}",
+             sensor, fault ? "true" : "false", reason, temp, d.raw, d.filtered, d.fails);
+  }
+
   mqtt.publishData(SENSOR_FAULT, String(msg));
-  logger.println(msg);
+
+  // A la SD con nivel según gravedad: un lazo abierto es una falla física que hay
+  // que poder rastrear después; la recuperación es informativa.
+  if (fault) LOG_E(TAG_ADC, "%s FALLA %s: %s", sensor, reason, msg);
+  else       LOG_I(TAG_ADC, "%s recuperado (%.2f C)", sensor, temp);
+}
+
+// Cuentas crudas de los tres canales analógicos. No convierte a °C a propósito: la
+// conversión es justo lo que está bajo sospecha (rampa ajustada en Excel sobre un
+// módulo no lineal), así que este tópico publica lo que el ADC realmente ve.
+// Lectura: 819 = 4 mA, 4095 = 20 mA. Por debajo de 819 el lazo está abierto.
+void publishAdcDiagnostics() {
+  const Controller::AdcDiag ta = controller.getAdcDiag(TA_AI);
+  const Controller::AdcDiag ts = controller.getAdcDiag(TS_AI);
+  const Controller::AdcDiag tc = controller.getAdcDiag(TC_AI);
+
+  char msg[200];
+  snprintf(msg, sizeof(msg),
+           "{\"ta\":{\"raw\":%u,\"med\":%u,\"fails\":%u},"
+            "\"ts\":{\"raw\":%u,\"med\":%u,\"fails\":%u},"
+            "\"tc\":{\"raw\":%u,\"med\":%u,\"fails\":%u}}",
+           ta.raw, ta.filtered, ta.fails,
+           ts.raw, ts.filtered, ts.fails,
+           tc.raw, tc.filtered, tc.fails);
+
+  mqtt.publishData(ADC_RAW, String(msg));
+  // DEBUG: es telemetría continua. A la SD solo llega si alguien baja el umbral para
+  // diagnosticar; si no, saturaría la tarjeta con una línea cada 10 s.
+  LOG_D(TAG_ADC, "%s", msg);
 }
 
 // Punto 1: si la lectura es válida actualiza `value`. Si NO lo es, conserva el último
 // valor bueno (no toca `value`) y publica alarma una sola vez por transición. El ciclo
 // NO se detiene: el proceso sigue con el último valor confiable.
-bool updateSensorReading(float raw, float &value, float lo, float hi, const char* name, bool &fault) {
+bool updateSensorReading(float raw, float &value, float lo, float hi, const char* name,
+                         bool &fault, uint8_t channel, uint32_t &last_report) {
   const bool valid = raw >= lo && raw <= hi;
   if (valid) {
     value = raw;
-    if (fault) { fault = false; sendSensorFault(name, false, raw); }  // recuperación
+    if (fault) { fault = false; sendSensorFault(name, false, raw, channel); }  // recuperación
     return true;
   }
-  if (!fault) { fault = true; sendSensorFault(name, true, raw); }      // nuevo fallo
+
+  if (!fault) {                                     // nuevo fallo
+    fault = true;
+    last_report = millis();
+    sendSensorFault(name, true, raw, channel);
+    return false;
+  }
+
+  // Falla que persiste. Sin esto se avisaba UNA sola vez y después silencio: una sonda
+  // que se muere de madrugada quedaba sin rastro y el ciclo seguía con el último valor
+  // bueno congelado. Se re-avisa cada SENSOR_FAULT_REPEAT_MS para que quede en el log
+  // y el SCADA pueda alarmar sobre algo que sigue presente.
+  if (millis() - last_report >= SENSOR_FAULT_REPEAT_MS) {
+    last_report = millis();
+    sendSensorFault(name, true, raw, channel);
+  }
   return false;
 }
 
@@ -1020,10 +1131,12 @@ void updateTemperature() {
   const bool use_ir_ts = controller.isTsContactLess() && controller.hasIRSensor();
   float ts_raw = use_ir_ts ? controller.getIRTemp() : controller.readTempFrom(TS_AI);
 
-  updateSensorReading(ta_raw, TA, TA_MIN, TA_MAX, "TA", ta_fault);
+  updateSensorReading(ta_raw, TA, TA_MIN, TA_MAX, "TA", ta_fault, TA_AI, ta_fault_report);
   // Cuando Tc llega por LoRa (isLoraTc), no se lee del canal analógico: lo actualiza el callback.
-  if (!controller.isLoraTc()) updateSensorReading(tc_raw, TC, TC_MIN, TC_MAX, "TC", tc_fault);
-  updateSensorReading(ts_raw, TS, TS_MIN, TS_MAX, "TS", ts_fault);
+  if (!controller.isLoraTc()) updateSensorReading(tc_raw, TC, TC_MIN, TC_MAX, "TC", tc_fault, TC_AI, tc_fault_report);
+  // Con Ts por IR el valor no viene del ADC, así que no hay cuentas que reportar.
+  updateSensorReading(ts_raw, TS, TS_MIN, TS_MAX, "TS", ts_fault,
+                      use_ir_ts ? ADC_MEDIAN_NO_PIN : TS_AI, ts_fault_report);
 
   getTempAvg();
 }
@@ -1032,6 +1145,10 @@ void setStage(SystemState stage) {
   if (currentState.stage > IDLE && stage == IDLE) logger.setFileName(DEFAULT_LOG_FILE);
   else if (currentState.stage == IDLE && stage > IDLE) logger.setFileName(controller.getDateTime());
   
+  // INFO: los cambios de etapa son EL evento del proceso. Van a la tarjeta para poder
+  // reconstruir un ciclo después, a diferencia del ruido de DEBUG.
+  LOG_I(TAG_STAGE, "Etapa %d -> %d", (int)currentState.stage, (int)stage);
+
   currentState.stage = stage;
   currentState.step = 0;
 
@@ -1061,8 +1178,14 @@ bool hasIntervalPassed(uint32_t &previousMillis, uint32_t interval, bool to_min)
   return false; 
 }
 
-void publishStateChange(const char* topic, int state, const String& message) {
-  mqtt.publishData(topic, state);
+// `value` es double, no int: por acá pasan tanto estados booleanos (m_F1, m_S1) como
+// magnitudes con decimales (SETPOINT, PID_OUTPUT). Con int, el setpoint se truncaba a
+// entero ANTES de publicarse -20.67 salía como "20.00"-, mientras que los mismos tópicos
+// publicados desde aknowledgementRoutine sí llevaban los decimales. De ahí que en el
+// broker el valor se viera entero casi siempre y con decimales de vez en cuando.
+// Para los booleanos no cambia nada: true ya salía como "1.00".
+void publishStateChange(const char* topic, double value, const String& message) {
+  mqtt.publishData(topic, value);
   logger.println(message);
 }
 
@@ -1237,6 +1360,8 @@ void aknowledgementRoutine(){
 
   // publishTemperatures();
   publishPID();
+
+  publishAdcDiagnostics();  // cuentas crudas del ADC: diagnóstico de la cadena 4-20 mA
 
   // Remaining mins usando epoch: sin overflow, correcto cruzando días/medianoche
   DateTime current_date = controller.getDateTime();

@@ -283,6 +283,8 @@ Key parameters:
 | `PORT` | int | MQTT broker port (`1883` plaintext, `8883` TLS) |
 | `USE_TLS` | bool | Enable TLS for MQTT (server-auth against embedded CA). Default `true` — set `false` to use plaintext `1883` |
 | `USERNAME` | string | MQTT username |
+| `TOPIC` | string | **MQTT topic prefix for this room** (e.g. `cfpp4/`). Optional — defaults to `cfpp4/`. A trailing `/` is added if missing. Lets one firmware serve all 9 rooms |
+| `LOG_SERIAL` | bool | Send logs to the serial port. Optional, default `true`. Set `false` on plant units where nobody ever plugs in a cable — on this board `Serial` is UART0 and `uart_write_bytes()` blocks waiting for TX room, so writing to a port nobody reads still costs |
 | `MQTT_ID` | string | MQTT client id |
 | `MQTT_PASSWORD` | string | MQTT password |
 

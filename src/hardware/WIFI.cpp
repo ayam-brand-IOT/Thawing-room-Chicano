@@ -587,16 +587,11 @@ void WIFI::reconnect(){
 }
 
 void WIFI::DEBUG(const char *message){
-  // concat prefix to the message with the classname
-  char buffer[100];
-  snprintf(buffer, sizeof(buffer), "[WIFI]: %s", message);
-  logger.println(buffer);
-}\
+  LOG_D(TAG_WIFI, "%s", message);
+}
 
 void WIFI::ERROR(ErrorType error){
-  char buffer[100];
-  snprintf(buffer, sizeof(buffer), " -> WIFI]: %s", errorMessages[error].c_str());
-  logger.printError(buffer);
+  LOG_E(TAG_WIFI, "%s", errorMessages[error].c_str());
 }
 
 

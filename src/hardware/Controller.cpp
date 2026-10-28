@@ -290,6 +290,7 @@ DateTime Controller::getDateTime() {
       rtc_last_valid_millis = millis();
       syncInternalRTC(now);           // mantener interno en sync con externo
       ntp_synced_to_internal = true;
+      noteTimeSource(TIME_SRC_EXTERNAL);
       return now;
     }
 
@@ -307,21 +308,36 @@ DateTime Controller::getDateTime() {
   // Fallback 1: ESP32 RTC interno
   DateTime internal = getDateTimeFromInternalRTC();
   if (isDateTimeValid(internal)) {
-    static bool internal_rtc_warned = false;
-    if (!internal_rtc_warned) {
-      DEBUG("Ext RTC unavailable - using ESP32 internal RTC");
-      internal_rtc_warned = true;
-    }
+    noteTimeSource(TIME_SRC_INTERNAL);
     return internal;
   }
 
-  // Fallback 2: última fecha válida + delta millis
-  static bool millis_warned = false;
-  if (!millis_warned) {
-    DEBUG("All RTC sources failed - millis fallback");
-    millis_warned = true;
-  }
+  // Fallback 2: última fecha válida + delta millis. Si nunca hubo una hora buena,
+  // buildFallbackDateTime() devuelve la fecha de compilación: eso NO es una hora, es
+  // una semilla, y se marca como tal para que quien programe algo pueda distinguirlo.
+  noteTimeSource(rtc_last_valid_millis == 0 ? TIME_SRC_NONE : TIME_SRC_MILLIS);
   return buildFallbackDateTime();
+}
+
+const char* Controller::timeSourceName(TimeSource source) {
+  switch (source) {
+    case TIME_SRC_EXTERNAL: return "DS3231 externo";
+    case TIME_SRC_INTERNAL: return "RTC interno del ESP32";
+    case TIME_SRC_MILLIS:   return "ultima hora valida + millis";
+    case TIME_SRC_NONE:     return "SIN HORA (fecha de compilacion)";
+    default:                return "desconocida";
+  }
+}
+
+// Loguea solo en la transición: getDateTime() se llama en cada vuelta del loop.
+void Controller::noteTimeSource(TimeSource source) {
+  last_time_source = source;
+  if (source == reported_time_source) return;
+  reported_time_source = source;
+
+  if (source == TIME_SRC_EXTERNAL) LOG_I(TAG_RTC, "Fuente de hora: %s", timeSourceName(source));
+  else if (source == TIME_SRC_NONE) LOG_E(TAG_RTC, "Fuente de hora: %s - el reloj NO es confiable", timeSourceName(source));
+  else LOG_W(TAG_RTC, "Fuente de hora degradada: %s", timeSourceName(source));
 }
 
 uint64_t Controller::readAnalogInput(uint8_t input) {
@@ -378,6 +394,30 @@ Controller::AdcMedian* Controller::getAdcMedian(uint8_t pin) {
   return nullptr;
 }
 
+// Igual que getAdcMedian pero sin reservar slot: si el canal nunca se leyó, devuelve
+// nullptr en vez de asignarle una ventana. Necesario para que getAdcDiag() sea const
+// y para que consultar el diagnóstico no altere el estado del filtro.
+const Controller::AdcMedian* Controller::findAdcMedian(uint8_t pin) const {
+  for (uint8_t i = 0; i < ADC_MEDIAN_SLOTS; i++) {
+    if (adc_median[i].pin == pin) return &adc_median[i];
+  }
+  return nullptr;
+}
+
+Controller::AdcDiag Controller::getAdcDiag(uint8_t channel) const {
+  AdcDiag diag;
+
+  const AdcMedian *st = findAdcMedian(channel);
+  if (st == nullptr) return diag;  // canal nunca leído: queda todo en inválido
+
+  diag.raw   = st->last_raw;
+  diag.fails = st->fail_streak;
+  diag.valid = (st->count > 0);
+  if (diag.valid) diag.filtered = medianOf(st->window, st->count);
+
+  return diag;
+}
+
 // Mediana de las primeras `count` muestras de la ventana. Copia y ordena por
 // inserción: con count <= 7 sale más barato que cualquier sort genérico, y no se
 // puede ordenar la ventana original porque es un buffer circular.
@@ -417,6 +457,8 @@ float Controller::readTempFrom(uint8_t channel) {
   if (st == nullptr) {  // sin slot disponible: lectura directa, sin filtrar
     return (raw == ADC_RAW_INVALID) ? ADC_TEMP_INVALID : rawToTemp(raw, channel);
   }
+
+  st->last_raw = raw;  // se guarda siempre, válida o no: es el dato de diagnóstico
 
   if (raw == ADC_RAW_INVALID) {
     if (st->fail_streak < ADC_MEDIAN_WINDOW) st->fail_streak++;
@@ -578,7 +620,9 @@ bool Controller::runConfigFile(char* ssid, char* password, char* hostname, char*
   if (doc.containsKey("PORT")) *port = doc["PORT"];
   if (doc.containsKey("USE_TLS")) use_tls = doc["USE_TLS"];
   if (doc.containsKey("USERNAME")) strlcpy(username, doc["USERNAME"], HOSTNAME_SIZE);
-  // if (doc.containsKey("TOPIC")) strlcpy(prefix_topic, doc["TOPIC"], HOSTNAME_SIZE);
+  // Prefijo de tópicos MQTT del cuarto. Si falta, el llamador conserva DEFAULT_TOPIC_PREFIX,
+  // así un equipo ya desplegado no cambia de tópicos al actualizar.
+  if (doc.containsKey("TOPIC")) strlcpy(prefix_topic, doc["TOPIC"], PREFIX_SIZE);
   if (doc.containsKey("MQTT_ID")) strlcpy(mqtt_id, doc["MQTT_ID"], MQTT_ID_SIZE);
   if (doc.containsKey("MQTT_PASSWORD")) strlcpy(mqtt_password, doc["MQTT_PASSWORD"], MQTT_PASSWORD_SIZE);
   if(doc.containsKey("IR_TS")) ir_ts = doc["IR_TS"];
@@ -588,6 +632,11 @@ bool Controller::runConfigFile(char* ssid, char* password, char* hostname, char*
   DEBUG(("TIME_ZONE_OFFSET_HRS: " + String(TIME_ZONE_OFFSET_HRS)).c_str());
   if(doc.containsKey("LoRa_Tc")) setLoraTc(doc["LoRa_Tc"]);
   if(doc.containsKey("WEB_SERIAL")) logger.setOutput(doc["WEB_SERIAL"]);
+  // En esta placa Serial es UART0 y no hay forma de saber si alguien escucha
+  // (HardwareSerial::operator bool está hardcodeado a true), así que se decide por
+  // configuración: en los equipos de planta nadie enchufa un cable nunca, y escribir
+  // a un UART sin lector igual cuesta -uart_write_bytes() bloquea esperando el TX.
+  if(doc.containsKey("LOG_SERIAL")) logger.setSerialEnabled(doc["LOG_SERIAL"]);
   // logging all values
   DEBUG(("SSID: " + String(ssid)).c_str());
   DEBUG(("WIFI_PASSWORD: " + String(password)).c_str());
@@ -667,16 +716,13 @@ void Controller::WiFiLoop() {
   }
 }
 
+// El prefijo de clase ya no se arma a mano: el tag lo pone el logger.
 void Controller::DEBUG(const char *message){
-  char buffer[100];
-  snprintf(buffer, sizeof(buffer), "[Controller]: %s", message);
-  logger.println(buffer);
+  LOG_D(TAG_CTRL, "%s", message);
 }
 
 void Controller::ERROR(ErrorType error){
-  char buffer[100];
-  snprintf(buffer, sizeof(buffer), " -> Controller]: %s", ERROR_MESSAGES[error]);
-  logger.printError(buffer);
+  LOG_E(TAG_CTRL, "%s", ERROR_MESSAGES[error]);
 }
 
 void Controller::turnOnFan(bool value, bool CCW) {
@@ -844,7 +890,18 @@ void Controller::syncInternalRTC(const DateTime& dt) {
 
 bool Controller::syncNTPToInternalRTC() {
   WiFiUDP localUDP;
-  NTPClient localClient(localUDP, "pool.ntp.org", 0, 60000);  // UTC puro
+  // MISMO offset que syncRTCWithNTP(): todas las fuentes de hora guardan LOCAL, que es
+  // lo que getDateTime() asume al devolverlas sin sumar nada.
+  //
+  // Antes acá iba 0 ("UTC puro") mientras el DS3231 se sincronizaba en local. Resultado:
+  // un equipo SIN RTC externo corría con el reloj desplazado TIME_ZONE_OFFSET_HRS -ocho
+  // horas en Taiping-, lo que además desplazaba el arranque diferido, que calcula su
+  // epoch objetivo desde getDateTime().
+  //
+  // Lo canónico sería guardar UTC en todos lados y sumar el offset al retornar, pero los
+  // DS3231 ya desplegados contienen local: cambiar la convención los haría saltar 8 h
+  // atrás al actualizar. Esto arregla el caso roto sin tocar los equipos sanos.
+  NTPClient localClient(localUDP, "pool.ntp.org", SECS_IN_HR * TIME_ZONE_OFFSET_HRS, 60000);
   localClient.begin();
 
   bool ok = false;
@@ -887,6 +944,19 @@ void Controller::saveStage2StartTime(uint8_t hour, uint8_t minute, uint8_t day, 
   }
 
   DateTime now = getDateTime();
+
+  // El arranque diferido programa horas hacia adelante contra este reloj. Si la hora es
+  // la semilla de compilación, el objetivo queda donde sea. No se bloquea -el operador
+  // pidió un ciclo y detenerlo sería peor- pero tiene que quedar asentado.
+  if (!isTimeTrusted()) {
+    LOG_E(TAG_RTC, "Arranque diferido programado SIN hora confiable (fuente: %s): "
+                   "el objetivo puede caer en cualquier momento",
+          timeSourceName(getTimeSource()));
+  } else if (getTimeSource() != TIME_SRC_EXTERNAL) {
+    LOG_W(TAG_RTC, "Arranque diferido programado con hora degradada (fuente: %s)",
+          timeSourceName(getTimeSource()));
+  }
+
   int16_t year = now.year();
 
   DateTime target(year, month, day, hour, minute, 0);

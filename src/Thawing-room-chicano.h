@@ -53,7 +53,8 @@ void callback(char *topic, byte *payload, unsigned int len);
 bool hasIntervalPassed(uint32_t &previousMillis, uint32_t interval, bool to_min = false);
 // Valida una lectura contra [lo, hi]. Si es válida actualiza `value`; si no, conserva
 // el último valor bueno y dispara alarma una sola vez por transición. Devuelve validez.
-bool updateSensorReading(float raw, float &value, float lo, float hi, const char* name, bool &fault);
+bool updateSensorReading(float raw, float &value, float lo, float hi, const char* name,
+                         bool &fault, uint8_t channel, uint32_t &last_report);
 void setUpWatchdog();
 
 void publishPID();
@@ -61,10 +62,16 @@ void onMQTTConnect();
 void aknowledgementRoutine();
 void publishTemperatures(DateTime &current_date);
 void publishTemperatures();
-void publishStateChange(const char* topic, int state, const String& message);
+// double, no int: por acá pasan booleanos y también magnitudes con decimales
+// (SETPOINT, PID_OUTPUT), que con int se truncaban antes de publicarse.
+void publishStateChange(const char* topic, double value, const String& message);
 
 
-void sendSensorFault(const char* sensor, bool fault, float raw);
+void sendSensorFault(const char* sensor, bool fault, float temp, uint8_t channel = ADC_MEDIAN_NO_PIN);
+// Traduce las CUENTAS del ADC a una causa: OPEN_LOOP / SATURATED / OUT_OF_RANGE / NO_DATA.
+const char* classifyFault(uint8_t channel, bool fault);
+// Publica las cuentas crudas del ADC (tópico ADC_RAW). Diagnóstico de la cadena 4-20 mA.
+void publishAdcDiagnostics();
 void turn_on_flush_routine();
 void turn_off_flush_routine();
 void ntp_sync_callback();  // forward declaration — definida debajo de controller
@@ -73,6 +80,11 @@ void ntp_sync_callback();  // forward declaration — definida debajo de control
 //---- timing settings -----////////////////////////////////////////////////////////////////////////////////
 
 #define MINS 60000
+
+// Cada cuánto se repite el aviso de un sensor que SIGUE fallando. Antes se avisaba una
+// sola vez y después silencio, así que una sonda muerta de madrugada no dejaba rastro.
+// 10 min: frecuente para que no pase inadvertido, espaciado para no llenar la SD.
+#define SENSOR_FAULT_REPEAT_MS (10UL * 60UL * 1000UL)
 
 // ---- Watchdog ----////////////////////////////////////////////////////////////////////////////////////////
 // Task WDT: resetea el equipo si el loop de control se cuelga > este tiempo. Holgado
