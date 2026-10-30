@@ -90,12 +90,40 @@ bool valToBool(String value){
   return value == "true";
 }
 
+// Resultado de la última subida a /replace-config. El handler de la petición corre
+// DESPUÉS del último trozo del archivo, así que lo lee de acá para contestar la verdad
+// (antes contestaba "updated successfully" aunque el archivo se hubiera rechazado).
+static bool   s_upload_done = false;
+static bool   s_upload_ok   = false;
+
+// Texto -> string JSON (comillas, barras y controles escapados).
+static String jsonString(const String &in) {
+  String out = "\"";
+  for (size_t i = 0; i < in.length(); i++) {
+    const char c = in[i];
+    if (c == '"' || c == '\\') { out += '\\'; out += c; }
+    else if ((uint8_t)c < 0x20) out += ' ';
+    else out += c;
+  }
+  return out + "\"";
+}
+
+static void sendResult(AsyncWebServerRequest *request, int code, bool ok, const String &msg, const String &extra = "") {
+  String body = "{\"ok\":";
+  body += ok ? "true" : "false";
+  body += ",\"msg\":" + jsonString(msg);
+  body += extra;
+  body += "}";
+  request->send(code, "application/json", body);
+}
+
 void handleFileUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
   // Acumulamos el archivo en memoria y lo persistimos atómicamente en SPIFFS al
   // terminar. Así una subida cortada a la mitad nunca corrompe el config bueno.
   static String upload_buffer;
 
   if (!index) {
+    s_upload_done = false;
     Serial.printf("Subiendo archivo: %s\n", filename.c_str());
     upload_buffer = "";
     upload_buffer.reserve(2048);
@@ -104,7 +132,9 @@ void handleFileUpload(AsyncWebServerRequest *request, String filename, size_t in
   for (size_t i = 0; i < len; i++) upload_buffer += (char)data[i];
 
   if (final) {
-    if (ConfigStore::write(CONFIG_FILE, upload_buffer)) {
+    s_upload_done = true;
+    s_upload_ok = ConfigStore::write(CONFIG_FILE, upload_buffer);
+    if (s_upload_ok) {
       Serial.printf("Archivo subido con éxito: %s\n", filename.c_str());
       events.emit(EV_SYSTEM, SRC_WEB, "config.txt replaced by upload (%s), applies on restart", filename.c_str());
     } else {
@@ -286,26 +316,31 @@ void WIFI::setUpWebServer(bool brigeSerial){
 
   server.on("/logs", HTTP_GET, [&](AsyncWebServerRequest *request){
     if(!checkAuth(request)) return;
-    if (!logger.hasSD()) {
-      request->send(503, "text/plain", "No SD card present - logs unavailable");
-      return;
-    }
+    // Sin SD o con la carpeta ilegible se muestra la página igual, con el motivo, en vez
+    // de una hoja en blanco con un texto plano.
     String log_list = "";
-    File root = SD.open(LOG_FOLDER_PATH);
-    if (!root) {
-      request->send(500, "text/plain", "Failed to open logs directory");
-      return;
+    const char *state = "ok";
+    if (!logger.hasSD()) {
+      state = "nosd";
+    } else {
+      logger.ensureLogFolder();   // SD nueva: lista vacía en vez de error
+      File root = SD.open(LOG_FOLDER_PATH);
+      if (!root) {
+        state = "error";
+      } else {
+        File file = root.openNextFile();
+        while (file) {
+          String fileName = file.name();
+          log_list += "\""+fileName + "\", ";
+          file = root.openNextFile();
+        }
+        log_list = log_list.substring(0, log_list.length() - 2);  // Remove trailing comma and space
+      }
     }
-    File file = root.openNextFile();
-    while (file) {
-      String fileName = file.name();
-      log_list += "\""+fileName + "\", ";
-      file = root.openNextFile();
-    }
-    log_list = log_list.substring(0, log_list.length() - 2);  // Remove trailing comma and space
-    
 
-    request->send(200, "text/html", setLayOutInfo(LOGS_HTML, "//{{LOGS}}", log_list));
+    String html = setLayOutInfo(LOGS_HTML, "//{{LOGS}}", log_list);
+    html.replace("{{SD_STATE}}", state);
+    request->send(200, "text/html", html);
   });
 
   // Bitácora de eventos. Sin `checkAuth` capturado: ese lambda es local de esta función
@@ -334,6 +369,115 @@ void WIFI::setUpWebServer(bool brigeSerial){
     request->send(res);
   });
 
+  // Control remoto del proceso. Mismo esquema de auth que /events.
+  server.on("/control", HTTP_GET, [this](AsyncWebServerRequest *request) {
+    if (!request->authenticate(www_username, www_password)) return request->requestAuthentication();
+    request->send(200, "text/html", setLayOutInfo(CONTROL_HTML));
+  });
+
+  server.on("/api/status", HTTP_GET, [this](AsyncWebServerRequest *request) {
+    if (!request->authenticate(www_username, www_password)) return request->requestAuthentication();
+    AsyncResponseStream *res = request->beginResponseStream("application/json");
+    res->addHeader("Cache-Control", "no-store");
+    remote.writeJSON(*res);
+    request->send(res);
+  });
+
+  // POST /api/control  action=start|dstart|stop|lock|unlock  [hour, minute, day, month]
+  // Exige el header X-Control: un formulario de otro sitio no puede mandarlo, y un fetch
+  // de otro origen con ese header necesita un preflight CORS que acá nunca se aprueba.
+  // Sin esto, cualquier página abierta en un navegador ya autenticado podría parar el cuarto.
+  server.on("/api/control", HTTP_POST, [this](AsyncWebServerRequest *request) {
+    if (!request->authenticate(www_username, www_password)) return request->requestAuthentication();
+    if (!request->hasHeader("X-Control")) {
+      request->send(403, "application/json", "{\"ok\":false,\"msg\":\"Missing X-Control header\"}");
+      return;
+    }
+    auto param = [request](const char* name) -> String {
+      return request->hasParam(name, true) ? request->getParam(name, true)->value() : String();
+    };
+    const String action = param("action");
+    ControlCommand cmd = {};
+    if      (action == "start")  cmd.action = CTRL_START;
+    else if (action == "dstart") cmd.action = CTRL_DSTART;
+    else if (action == "stop")   cmd.action = CTRL_STOP;
+    else if (action == "lock")   cmd.action = CTRL_LOCK_ON;
+    else if (action == "unlock") cmd.action = CTRL_LOCK_OFF;
+    if (cmd.action == CTRL_DSTART) {
+      // toInt() de un campo vacío da 0; un 0 en día o mes lo rechaza la validación.
+      cmd.hour   = (uint8_t)constrain(param("hour").toInt(),   0, 255);
+      cmd.minute = (uint8_t)constrain(param("minute").toInt(), 0, 255);
+      cmd.day    = (uint8_t)constrain(param("day").toInt(),    0, 255);
+      cmd.month  = (uint8_t)constrain(param("month").toInt(),  0, 255);
+    }
+
+    char err[160];
+    const uint32_t id = remote.request(cmd, err, sizeof(err));
+    if (!id) {
+      String body = "{\"ok\":false,\"msg\":\"";
+      body += err;   // mensajes propios, sin comillas
+      body += "\"}";
+      request->send(409, "application/json", body);
+      return;
+    }
+    request->send(202, "application/json", "{\"ok\":true,\"id\":" + String(id) + "}");
+  });
+
+  // Asistente de calibración de sondas. Lecturas siempre; cambios solo con el bloqueo
+  // por mantenimiento activo y el cuarto en reposo (lo valida SensorCalibration).
+  server.on("/calibration", HTTP_GET, [this](AsyncWebServerRequest *request) {
+    if (!request->authenticate(www_username, www_password)) return request->requestAuthentication();
+    request->send(200, "text/html", setLayOutInfo(CALIBRATION_HTML));
+  });
+
+  server.on("/api/calibration", HTTP_GET, [this](AsyncWebServerRequest *request) {
+    if (!request->authenticate(www_username, www_password)) return request->requestAuthentication();
+    AsyncResponseStream *res = request->beginResponseStream("application/json");
+    res->addHeader("Cache-Control", "no-store");
+    if (!calib.writeJSON(*res)) {
+      delete res;
+      request->send(503, "text/plain", "Calibration busy, try again");
+      return;
+    }
+    request->send(res);
+  });
+
+  // POST /api/calibration  action=save|revert|reset  ch=ta|ts|tc  [r1,t1,r2,t2,r3,t3]
+  // Mismo header X-Control que /api/control, por la misma razón.
+  server.on("/api/calibration", HTTP_POST, [this](AsyncWebServerRequest *request) {
+    if (!request->authenticate(www_username, www_password)) return request->requestAuthentication();
+    if (!request->hasHeader("X-Control")) {
+      request->send(403, "application/json", "{\"ok\":false,\"msg\":\"Missing X-Control header\"}");
+      return;
+    }
+    auto param = [request](const String &name) -> String {
+      return request->hasParam(name, true) ? request->getParam(name, true)->value() : String();
+    };
+    const String action = param("action"), key = param("ch");
+    uint8_t ch = 255;
+    for (uint8_t i = 0; i < CAL_CHANNELS; i++) if (key == SensorCalibration::channelKey(i)) ch = i;
+
+    CalOp op;
+    if      (action == "save")   op = CAL_OP_SAVE;
+    else if (action == "revert") op = CAL_OP_REVERT;
+    else if (action == "reset")  op = CAL_OP_RESET;
+    else { request->send(400, "application/json", "{\"ok\":false,\"msg\":\"Unknown action\"}"); return; }
+
+    CalPoint pts[CAL_POINTS];
+    for (uint8_t i = 0; i < CAL_POINTS; i++) {
+      const String r = param("r" + String(i + 1)), t = param("t" + String(i + 1));
+      pts[i].raw  = (uint16_t)constrain(r.toInt(), 0, 65535);
+      pts[i].temp = t.length() ? t.toFloat() : NAN;
+    }
+
+    char msg[160];
+    const bool ok = calib.request(op, ch, pts, msg, sizeof(msg));
+    String body = ok ? "{\"ok\":true,\"msg\":\"" : "{\"ok\":false,\"msg\":\"";
+    body += msg;   // mensajes propios, sin comillas
+    body += "\"}";
+    request->send(ok ? 200 : 409, "application/json", body);
+  });
+
   server.onNotFound([](AsyncWebServerRequest *request) {
       // En modo AP, cualquier URL desconocida redirige al portal (captive portal):
       // así el navegador/teléfono abre solo la página de configuración.
@@ -346,16 +490,22 @@ void WIFI::setUpWebServer(bool brigeSerial){
 
   // ======================== SERVER PROCESES ========================
 
-  server.on("/replace-config", HTTP_POST, [&checkAuth](AsyncWebServerRequest *request){
-    if(!checkAuth(request)) return;
-    request->send(200, "text/plain", "Configuration updated successfully");
-
+  server.on("/replace-config", HTTP_POST, [this](AsyncWebServerRequest *request){
+    if (!request->authenticate(www_username, www_password)) return request->requestAuthentication();
+    if (!s_upload_done) {
+      sendResult(request, 400, false, "No file was received. Choose a config file and try again.");
+    } else if (!s_upload_ok) {
+      sendResult(request, 422, false, "The file is not valid JSON, so it was rejected. The current config.txt was kept.");
+    } else {
+      sendResult(request, 200, true, "config.txt replaced. It takes effect after a restart.", ",\"restart\":true");
+    }
+    s_upload_done = false;
   }, handleFileUpload);
   
   /*handling uploading firmware file */
   server.on("/reset", HTTP_POST, [&checkAuth](AsyncWebServerRequest *request) {
     if(!checkAuth(request)) return;
-    request->send(200, "text/plain", "Resetting...");
+    sendResult(request, 200, true, "Restarting");
     events.emit(EV_SYSTEM, SRC_WEB, "Controller restart requested from the web interface");
     scheduleRestart();
   });
@@ -454,14 +604,14 @@ void WIFI::setUpWebServer(bool brigeSerial){
 
     const String current = ConfigStore::read(fileToUpdate);
     if (current.length() == 0) {
-      request->send(500, "text/plain", "Failed to open config file for writing");
+      sendResult(request, 500, false, "Could not read the file on the controller. Nothing was saved.");
       return;
     }
 
     DynamicJsonDocument doc(4096);  // Ajusta el tamaño según tu archivo JSON
     DeserializationError error = deserializeJson(doc, current);
     if (error) {
-      request->send(500, "text/plain", "Failed to parse config file");
+      sendResult(request, 500, false, "The file on the controller is not valid JSON. Nothing was saved.");
       return;
     }
 
@@ -474,11 +624,23 @@ void WIFI::setUpWebServer(bool brigeSerial){
     serializeJson(doc, Serial);
     Serial.println();
 
+    // Sin cambios no se toca la flash ni se ensucia la bitácora.
+    if (changes.empty()) {
+      sendResult(request, 200, true, "Nothing changed.", ",\"changes\":[],\"restart\":false");
+      return;
+    }
+
     // Persistir atómicamente en SPIFFS
     String out;
     serializeJson(doc, out);
     if (ConfigStore::write(fileToUpdate, out)) {
-      request->send(200, "text/plain", "Configuration updated successfully");
+      String list = ",\"changes\":[";
+      for (size_t i = 0; i < changes.size(); i++) {
+        if (i) list += ',';
+        list += jsonString(changes[i]);
+      }
+      list += "],\"restart\":true";
+      sendResult(request, 200, true, String(changes.size()) + (changes.size() == 1 ? " value saved." : " values saved."), list);
       // Estos archivos se leen al arrancar: el cambio rige recién tras reiniciar.
       const bool is_config = strcmp(fileToUpdate, CONFIG_FILE) == 0;
       const char* file = is_config ? "config.txt" : "defaultParameters.txt";
@@ -491,7 +653,7 @@ void WIFI::setUpWebServer(bool brigeSerial){
                     file, (unsigned)(changes.size() - shown));
       }
     } else {
-      request->send(500, "text/plain", "Failed to write to file");
+      sendResult(request, 500, false, "The controller could not write the file. Nothing was changed.");
     }
   });
 

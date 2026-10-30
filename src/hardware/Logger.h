@@ -148,6 +148,7 @@ public:
     bool setupSD();
     bool retrySD();
     bool hasSD();
+    bool ensureLogFolder();   // crea /logs si falta; false si no hay SD o no se pudo
     void getSDInfo();
     String getFileName();
     void setFileName(DateTime now);

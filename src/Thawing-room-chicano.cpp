@@ -69,6 +69,16 @@ SensorBuffer sensorTsPT100(10);  // Crear otra instancia para el sensor TsPT100
 
 // SystemState currentState = IDLE;
 StageState currentState = {IDLE, 0};
+// Cuándo se entró a la etapa actual, para la página de control. Tras un reinicio con
+// proceso en curso no se sabe: se toma el arranque y se marca stage_since_boot.
+uint32_t stage_since_ms = 0;
+bool stage_since_boot = false;
+
+// Bloqueo por mantenimiento (ver setMaintenanceLock). Persistido en NVS "maint": un
+// reinicio o un corte de luz a mitad de la reparación NO debe liberarlo.
+bool     maintenance_lock = false;
+uint32_t maintenance_since = 0;     // epoch LOCAL de activación (0 = desconocido)
+uint8_t  maintenance_source = SRC_SYSTEM;
 
 // ########################## TASKS ##########################
 Task low_priority_msgs(10000, TASK_FOREVER, &aknowledgementRoutine);
@@ -147,6 +157,7 @@ void setup() {
 
   logger.begin();   // cola del logger; el reloj se lo alimenta loop() con setClock()
   events.begin();   // bitácora de eventos (SPIFFS ya montado por controller.init())
+  calib.begin();   // calibración de 3 puntos por sonda (/calibration.txt); antes de la primera lectura
 
   // Defaults por si no hay config.txt: el equipo igual arranca y levanta su portal AP.
   char SSID[SSID_SIZE] = "";
@@ -208,6 +219,7 @@ void setup() {
   // Alimentar el reloj ya en setup: sin esto los eventos de arranque salen sin hora,
   // porque loop() todavía no corrió.
   logger.setClock(current_date, controller.isTimeTrusted());
+  loadMaintenanceLock();
   logBootEvents(config_ok, online);
 
   StageState last_state = controller.getLastState();
@@ -216,11 +228,14 @@ void setup() {
   logger.println(stateBuffer);
   if (last_state.stage != IDLE) {
     currentState = last_state;
+    stage_since_ms = millis();
+    stage_since_boot = true;
     events.setStage(last_state.stage);
     events.cycleResume(SRC_SYSTEM, "Resumed Stage %d after controller restart", (int)last_state.stage);
   } else {
     events.cycleClear();
   }
+  showStageLeds();   // tras un reinicio con proceso en curso las luces quedaban apagadas
 
   // Solo levantar MQTT si estamos online (estación con WiFi). En modo AP/portal
   // IP_ADDRESS puede estar vacío y no hay red: intentar conectar sería un gasto inútil
@@ -291,6 +306,7 @@ void setUpWatchdog() {
   if (esp_task_wdt_init(&wdt_cfg) == ESP_ERR_INVALID_STATE) {
     esp_task_wdt_reconfigure(&wdt_cfg);
   }
+  controller.endBootPhase();   // desde acá el NTP no puede bloquear (ver Controller::ntpServerIP)
   esp_task_wdt_add(NULL);   // vigilar la task actual (loopTask, core 1)
   esp_task_wdt_reset();
   logger.println(F("[BOOT] Watchdog armado"));
@@ -331,7 +347,10 @@ void loop() {
   // if ((TI) > (LOW_TEMP_LIMIT) && (TI) < (HIGH_TEMP_LIMIT))
    TI_F = TI;
 
+  serviceRemoteControl(current_date);
   handleInputs();
+  serviceMaintenanceLeds();
+  serviceCalibration();
 
   handleStage();
 
@@ -340,18 +359,28 @@ void loop() {
 }
 
 
-bool handleInputs(button_type override) {
+bool handleInputs(button_type override, EventSource override_source) {
   button_type button = NONE;
   bool pressed_btn = false;
 
-  // override solo llega desde el callback MQTT (SCADA). Si en la misma vuelta además se
-  // soltó un botón físico, gana el botón, y el origen tiene que decir eso.
-  EventSource source = override ? SRC_REMOTE : SRC_MANUAL;
+  // override llega del callback MQTT (SCADA) o de la página de control (WEB). Si en la
+  // misma vuelta además se soltó un botón físico, gana el botón, y el origen tiene que
+  // decir eso.
+  EventSource source = override ? override_source : SRC_MANUAL;
   if (override) pressed_btn = button = override;
 
   if      (d_start_button.released()) { button = D_START; source = SRC_MANUAL; }
   else if (start_btn.released())      { button = START;   source = SRC_MANUAL; }
   else if (stop_btn.released())       { button = STOP;    source = SRC_MANUAL; }
+
+  if ((button == D_START || button == START) && maintenance_lock) {
+    // Nada arranca en mantenimiento, venga de donde venga. STOP sí pasa.
+    events.emit(EV_ALERT, source, "%s blocked: maintenance lockdown is active",
+                button == START ? "Start" : "Delayed start");
+    LOG_W(TAG_STAGE, "Arranque bloqueado por mantenimiento (origen %s)", EventLog::sourceName(source));
+    mqtt.publishData(MAINTENANCE_STATE, 1);
+    return !pressed_btn;
+  }
 
   if      (button == D_START)         setStage(STAGE1, source);
   else if (button == START)           setStage(STAGE2, source);
@@ -778,6 +807,13 @@ static void handleMqttMessage(char *topic, byte *payload, unsigned int len) {
   }
   
 
+  // Bloqueo por mantenimiento: va ANTES del corte por etapa, para poder activarlo
+  // también con el proceso corriendo.
+  if (mqtt.isTopicEqual(topic, sub_maintenance)) {
+    setMaintenanceLock(mqtt.responseToInt(payload, len) != 0, SRC_REMOTE);
+    return;
+  }
+
   if (currentState.stage != IDLE) return;
 
       // Delayed start timing
@@ -1125,6 +1161,111 @@ void watchBrokerLink() {
 }
 
 // ---- Eventos de arranque ----
+// ---- Página de control (/control) ----
+// Corre en el loop: ejecuta el comando que haya dejado un handler web y publica la foto
+// del proceso. Los comandos entran por handleInputs(), el mismo camino que el SCADA, así
+// que respetan las mismas reglas y quedan en la bitácora con origen WEB.
+void serviceRemoteControl(const DateTime &now) {
+  ControlCommand cmd;
+  if (remote.take(cmd)) {
+    const SystemState before = currentState.stage;
+    char msg[96];
+    bool ok = false;
+
+    if (cmd.action == CTRL_STOP) {
+      if (before == IDLE) {
+        snprintf(msg, sizeof(msg), "The process was already stopped.");
+      } else {
+        handleInputs(STOP, SRC_WEB);
+        ok = currentState.stage == IDLE;
+        snprintf(msg, sizeof(msg), ok ? (before == STAGE3 ? "Process finished." : "Process stopped.")
+                                      : "The stop did not go through.");
+      }
+    } else if (cmd.action == CTRL_LOCK_ON || cmd.action == CTRL_LOCK_OFF) {
+      const bool on = cmd.action == CTRL_LOCK_ON;
+      ok = setMaintenanceLock(on, SRC_WEB) || maintenance_lock == on;
+      snprintf(msg, sizeof(msg), on ? "Maintenance lockdown enabled. Starting is blocked."
+                                    : "Maintenance lockdown lifted. Starting is allowed again.");
+    } else if (maintenance_lock) {
+      // Lo activó el SCADA entre la validación del handler y esta vuelta.
+      snprintf(msg, sizeof(msg), "Not started: maintenance lockdown is active.");
+    } else if (before != IDLE) {
+      // Entre la validación del handler y esta vuelta alguien más arrancó el proceso.
+      snprintf(msg, sizeof(msg), "Not started: the process is already in Stage %d.", (int)before);
+    } else if (cmd.action == CTRL_START) {
+      handleInputs(START, SRC_WEB);
+      ok = currentState.stage == STAGE2;
+      snprintf(msg, sizeof(msg), ok ? "Process started in Stage 2." : "The start did not go through.");
+    } else if (cmd.action == CTRL_DSTART) {
+      stage2_hour   = cmd.hour;
+      stage2_minute = cmd.minute;
+      stage2_day    = cmd.day;
+      stage2_month  = cmd.month;
+      handleInputs(D_START, SRC_WEB);
+      ok = currentState.stage == STAGE1;
+      if (ok) snprintf(msg, sizeof(msg), "Delayed start: Stage 2 at %02u:%02u on %02u/%02u.",
+                       stage2_hour, stage2_minute, stage2_day, stage2_month);
+      else    snprintf(msg, sizeof(msg), "The delayed start did not go through.");
+    } else {
+      snprintf(msg, sizeof(msg), "Unknown action.");
+    }
+    remote.finish(cmd.id, ok, msg);
+    LOG_I(TAG_APP, "Web control: %s", msg);
+  }
+
+  static uint32_t last_publish = 0;
+  if (millis() - last_publish < 500) return;
+  last_publish = millis();
+
+  ControlStatus s = {};
+  const SystemState stage = currentState.stage;
+  s.stage = stage;
+  Stage *running = stage == STAGE1 ? &stage_1 : stage == STAGE2 ? &stage_2 : stage == STAGE3 ? &stage_3 : nullptr;
+  s.step = running ? running->getCurrentStep() : 0;
+  s.starting = (stage == STAGE2 || stage == STAGE3) && s.step <= 1 && !controller.getFanState();
+  s.cycle = events.cycle();
+  s.cycle_active = events.cycleActive();
+  s.stage_since = stage_since_ms ? logger.epochAt(stage_since_ms) : 0;
+  s.stage_since_boot = stage_since_boot;
+
+  s.ta = TA_F;  s.ts = TS_F;  s.tc = TC_F;
+  s.avg_ta = sensorTa.getAverage();
+  s.avg_ts = sensorTs.getAverage();
+  s.avg_tc = sensorTc.getAverage();
+  s.ta_fault = ta_fault;  s.ts_fault = ts_fault;  s.tc_fault = tc_fault;
+  s.ta_counts = controller.getAdcDiag(TA_AI).filtered;
+  // 0xFFFF = la lectura no sale del ADC (Ts por IR, Tc por LoRa): no hay cuentas.
+  s.ts_counts = (controller.isTsContactLess() && controller.hasIRSensor()) ? 0xFFFF : controller.getAdcDiag(TS_AI).filtered;
+  s.tc_counts = controller.isLoraTc() ? 0xFFFF : controller.getAdcDiag(TC_AI).filtered;
+  s.ts_set = temp_set.ts;
+  s.tc_set = temp_set.tc;
+  s.pid_setpoint = pid_setpoint;
+
+  s.fan_on = controller.getFanState();
+  s.fan_reverse = s.fan_on && controller.readDigitalInput(FAN_CCW_IO);
+  s.damper = controller.readDigitalInput(AIR_DAMPER_IO);
+  s.sprinkler = controller.readDigitalInput(VALVE_IO);
+  s.air_duty = controller.getAirDuty();
+  s.air_max = (uint8_t)((1U << RESOLUTION) - 1U);
+
+  s.s2_hour = stage2_hour;  s.s2_minute = stage2_minute;
+  s.s2_day = stage2_day;    s.s2_month = stage2_month;
+  s.s2_set = controller.isStage2TimeSet();
+  s.s2_remaining_min = s.s2_set ? controller.getRemainingMinutesToStage2(now) : -1;
+
+  s.lock = maintenance_lock;
+  s.lock_since = maintenance_since;
+  s.lock_source = maintenance_source;
+
+  s.wifi = controller.isWiFiConnected();
+  s.mqtt = s.wifi && mqtt.isConnected();
+  s.sd = logger.hasSD();
+  s.time_trusted = controller.isTimeTrusted();
+  s.time_source = controller.getTimeSource();
+
+  remote.publish(s);
+}
+
 void logBootEvents(bool config_ok, bool online) {
   const esp_reset_reason_t reason = esp_reset_reason();
   const char* cause = "unknown cause";
@@ -1313,6 +1454,8 @@ void setStage(SystemState stage, EventSource source, const char* reason) {
 
   currentState.stage = stage;
   currentState.step = 0;
+  stage_since_ms = millis();
+  stage_since_boot = false;
 
   events.setStage(stage);
   if (stage == IDLE) {
@@ -1335,12 +1478,106 @@ void setStage(SystemState stage, EventSource source, const char* reason) {
   mqtt.publishData(STAGE, stage);
   controller.saveLastState(currentState);
 
+  showStageLeds();
+}
+
+// Luz fija de la etapa vigente. En bloqueo por mantenimiento manda el parpadeo
+// (serviceMaintenanceLeds) y esto no toca nada.
+void showStageLeds() {
+  if (maintenance_lock) return;
+  const SystemState stage = currentState.stage;
   for (int i = STAGE1; i <= STAGE3; i++) {
     if (stageLedPins[i] != -1) digitalWrite(stageLedPins[i], LOW);
   }
-
   if (stage >= STAGE1 && stage <= STAGE3 && stageLedPins[stage] != -1) {
-      digitalWrite(stageLedPins[stage], HIGH);
+    digitalWrite(stageLedPins[stage], HIGH);
+  }
+}
+
+// ---- Asistente de calibración (/calibration) ----
+// Aplica la calibración que haya guardado la web y le pasa al asistente las cuentas del
+// ADC (la mediana, la misma que da la temperatura) cada CAL_SAMPLE_MS.
+void serviceCalibration() {
+  calib.service();
+
+  static uint32_t last_sample = 0;
+  if (millis() - last_sample < CAL_SAMPLE_MS) return;
+  last_sample = millis();
+
+  const bool avail[CAL_CHANNELS] = {
+    true,
+    !(controller.isTsContactLess() && controller.hasIRSensor()),
+    !controller.isLoraTc()
+  };
+  const uint8_t pins[CAL_CHANNELS] = {TA_AI, TS_AI, TC_AI};
+  for (uint8_t ch = 0; ch < CAL_CHANNELS; ch++) {
+    if (!avail[ch]) continue;
+    const Controller::AdcDiag d = controller.getAdcDiag(pins[ch]);
+    if (d.valid) calib.sample(ch, d.filtered);
+  }
+  calib.setContext(maintenance_lock, currentState.stage, avail);
+}
+
+// ---- Bloqueo por mantenimiento ----
+void loadMaintenanceLock() {
+  Preferences prefs;
+  prefs.begin("maint", true);
+  maintenance_lock   = prefs.getBool("lock", false);
+  maintenance_since  = prefs.getUInt("since", 0);
+  maintenance_source = prefs.getUChar("src", SRC_SYSTEM);
+  prefs.end();
+  if (maintenance_lock) {
+    LOG_W(TAG_APP, "Bloqueo por mantenimiento ACTIVO desde el arranque");
+    events.emit(EV_ALERT, SRC_SYSTEM, "Maintenance lockdown still active after restart: starting is blocked");
+  }
+}
+
+// Devuelve false si ya estaba en ese estado (no se registra nada).
+// NO para un proceso en curso: un cambio de modo no debe mover actuadores por su cuenta;
+// para eso está STOP, que sigue funcionando.
+bool setMaintenanceLock(bool on, EventSource source) {
+  if (on == maintenance_lock) {
+    mqtt.publishData(MAINTENANCE_STATE, on);   // re-confirmar al SCADA aunque no cambie
+    return false;
+  }
+  maintenance_lock   = on;
+  maintenance_since  = on ? logger.epochAt(millis()) : 0;
+  maintenance_source = source;
+
+  Preferences prefs;
+  prefs.begin("maint", false);
+  prefs.putBool("lock", on);
+  prefs.putUInt("since", maintenance_since);
+  prefs.putUChar("src", (uint8_t)source);
+  prefs.end();
+
+  if (on) {
+    if (currentState.stage != IDLE) {
+      events.emit(EV_ALERT, source, "Maintenance lockdown enabled while Stage %d is running: the process keeps running until stopped",
+                  (int)currentState.stage);
+    } else {
+      events.emit(EV_ALERT, source, "Maintenance lockdown enabled: starting is blocked");
+    }
+  } else {
+    events.emit(EV_SYSTEM, source, "Maintenance lockdown lifted: starting is allowed again");
+    showStageLeds();   // devolver las luces a la etapa real
+  }
+  LOG_I(TAG_APP, "Bloqueo por mantenimiento %s (origen %s)", on ? "ACTIVADO" : "levantado", EventLog::sourceName(source));
+  mqtt.publishData(MAINTENANCE_STATE, on);
+  return true;
+}
+
+// Las 3 luces de etapa parpadean juntas mientras dure el bloqueo: se ve desde el pasillo
+// que el cuarto está en reparación. No bloqueante, 500 ms encendido / 500 ms apagado.
+void serviceMaintenanceLeds() {
+  if (!maintenance_lock) return;
+  static uint32_t last_toggle = 0;
+  static bool lit = false;
+  if (millis() - last_toggle < 500) return;
+  last_toggle = millis();
+  lit = !lit;
+  for (int i = STAGE1; i <= STAGE3; i++) {
+    if (stageLedPins[i] != -1) digitalWrite(stageLedPins[i], lit ? HIGH : LOW);
   }
 }
 
@@ -1496,6 +1733,7 @@ void onMQTTConnect() {
   // mqtt.publishData(m_F2, fan_2);
   mqtt.publishData(m_S1, controller.readDigitalInput(VALVE_IO));
   mqtt.publishData(STAGE, currentState.stage);
+  mqtt.publishData(MAINTENANCE_STATE, maintenance_lock);
   mqtt.publishData(TA_TOPIC, TA);
   mqtt.publishData(TS_TOPIC, TS);
   mqtt.publishData(TC_TOPIC, TC);
@@ -1530,6 +1768,7 @@ void asyncLoopSprinkler(uint32_t &timer, uint32_t offTime, uint32_t onTime) {
 
 void aknowledgementRoutine(){
   mqtt.publishData(STAGE, currentState.stage);
+  mqtt.publishData(MAINTENANCE_STATE, maintenance_lock);
 
   mqtt.publishData(m_F1, controller.getFanState());
   mqtt.publishData(m_F1_CCW, controller.readDigitalInput(FAN_CCW_IO));

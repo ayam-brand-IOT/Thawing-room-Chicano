@@ -10,6 +10,7 @@
 #include <TaskScheduler.h>
 #include "./hardware/Logger.h"
 #include "./hardware/EventLog.h"
+#include "./hardware/RemoteControl.h"
 #include "config.h"
 #include "./hardware/Controller.h"
 #include "types.h"
@@ -51,7 +52,7 @@ void asyncLoopSprinkler(uint32_t &timer, uint32_t offTime, uint32_t onTime);
 void getTempAvg();
 void updateTemperature();
 // override viene del SCADA por MQTT; los botones físicos se leen adentro.
-bool handleInputs(button_type override = NONE);
+bool handleInputs(button_type override = NONE, EventSource override_source = SRC_REMOTE);
 void callback(char *topic, byte *payload, unsigned int len);
 bool hasIntervalPassed(uint32_t &previousMillis, uint32_t interval, bool to_min = false);
 // Valida una lectura contra [lo, hi]. Si es válida actualiza `value`; si no, conserva
@@ -82,6 +83,13 @@ void ntp_sync_callback();  // forward declaration — definida debajo de control
 // Bitácora de eventos (EventLog): arranque del equipo y enlace con el SCADA.
 void logBootEvents(bool config_ok, bool online);
 void watchBrokerLink();
+void serviceRemoteControl(const DateTime &now);
+// Bloqueo por mantenimiento: impide cualquier arranque (panel, SCADA, web). Persiste.
+void loadMaintenanceLock();
+bool setMaintenanceLock(bool on, EventSource source);
+void serviceMaintenanceLeds();
+void serviceCalibration();
+void showStageLeds();
 
 
 //---- timing settings -----////////////////////////////////////////////////////////////////////////////////

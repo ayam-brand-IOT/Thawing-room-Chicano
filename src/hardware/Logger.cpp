@@ -121,7 +121,7 @@ void Logger::drain() {
     const uint32_t epoch_ms = clock_ms;
     portEXIT_CRITICAL(&clock_mux);
 
-    if (!SD.exists(LOG_FOLDER_PATH)) SD.mkdir(LOG_FOLDER_PATH);
+    if (!ensureLogFolder()) return;   // la tarjeta pudo cambiarse en caliente
     const String path = LOG_FOLDER_PATH + filename;
     rotateIfNeeded(path);
 
@@ -210,8 +210,8 @@ void Logger::writeSD(const String &message, DateTime now) {
         return;
     }
 
-    if (!SD.exists(LOG_FOLDER_PATH)) SD.mkdir(LOG_FOLDER_PATH);
-    
+    if (!ensureLogFolder()) return;
+
     const String path = LOG_FOLDER_PATH + filename;
 
     File file = SD.open(path, FILE_APPEND);
@@ -307,6 +307,8 @@ bool Logger::setupSD() {
 
     if (!theresSD) {
         Serial.println("[Logger] No SD card - continuing without logging to SD");
+    } else {
+        ensureLogFolder();
     }
     return theresSD;
 }
@@ -319,11 +321,26 @@ bool Logger::retrySD() {
         Serial.println("[Logger] SD card detected");
     }
     digitalWrite(SS, HIGH);
+    if (theresSD) ensureLogFolder();
     return theresSD;
 }
 
 bool Logger::hasSD() {
     return theresSD;
+}
+
+// La carpeta se crea al montar la tarjeta, no solo cuando drain() tiene algo que
+// escribir: en una SD recién formateada /logs no existía y la página de logs daba 500
+// hasta la primera línea. Los escritores la vuelven a pedir por si cambiaron la tarjeta.
+bool Logger::ensureLogFolder() {
+    if (!theresSD) return false;
+    if (SD.exists(LOG_FOLDER_PATH)) return true;
+    if (SD.mkdir(LOG_FOLDER_PATH)) {
+        Serial.println("[Logger] Created " LOG_FOLDER_PATH " on SD");
+        return true;
+    }
+    Serial.println("[Logger] Could not create " LOG_FOLDER_PATH " on SD");
+    return false;
 }
 
 void Logger::getSDInfo() {

@@ -61,9 +61,10 @@
 #define LORA_TC                 "lora_TC"
 #define IS_TC_LORA              "isTcLora"
 #define IS_TS_IR                "isTsIR"
+#define sub_maintenance         "maintenance"   // 1 = activar bloqueo por mantenimiento, 0 = levantarlo
 
 
-#define SUB_ARRAY_SIZE 37
+#define SUB_ARRAY_SIZE 38
 
 //------------ publish index    -------------------------------------------------------------------->
 #define m_F1                    "M_F1"
@@ -103,6 +104,7 @@
 #define SPOILED_SENSOR          "spoiled_sensor"
 #define IR_TS                   "IR_TS"
 #define REMAINING_D_START       "REMAINING_DELAY_START"
+#define MAINTENANCE_STATE       "maintenance_state"   // 1/0: estado vigente del bloqueo
 
 // ERROR MESSAGES
 #define ON_CONNECTION_ERR_TXT "Error on connection"
@@ -216,6 +218,7 @@ class MqttClient {
       LORA_TC,
       IS_TC_LORA,
       IS_TS_IR,
+      sub_maintenance,
     };
 
 };

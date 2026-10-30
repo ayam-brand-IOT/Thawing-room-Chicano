@@ -15,6 +15,7 @@
 #include <Arduino.h>
 #include <OneWire.h>
 #include <NTPClient.h>
+#include "Calibration.h"
 #include <ArduinoJson.h>
 #include <Preferences.h>
 #include "SensorBuffer.h"
@@ -83,6 +84,7 @@ private:
 
     WIFI wifi;
     bool fan_state = false;
+    uint8_t air_duty = 0;   // último duty escrito al PWM de aire (para la página de control)
     int ARRAY_SIZE = 7;
     bool ir_ts = false;
     bool use_tls = true;  // TLS activo por defecto; poner "USE_TLS": false en config.txt para desactivar
@@ -95,6 +97,17 @@ private:
     bool ntp_synced_to_internal = false;
     uint32_t rtc_last_reconnect_attempt = 0;
     uint32_t rtc_last_valid_millis = 0;
+    // NTP sin DNS en el loop: si el DNS no contesta, resolver pool.ntp.org tarda ~15 s y
+    // eso, dentro de loop(), dispara el watchdog. La resolución corre en una task aparte y
+    // el loop solo habla NTP contra la IP ya resuelta (timeout de ~1 s por intento).
+    volatile uint32_t ntp_ip = 0;          // 0 = todavía sin resolver
+    volatile bool     ntp_dns_busy = false;
+    uint32_t ntp_dns_last_try = 0;
+    uint32_t ntp_last_try = 0;             // último intento NTP desde el loop (para espaciar reintentos)
+    bool     boot_phase = true;            // en setup() se puede bloquear: el watchdog aún no está armado
+    bool ntpServerIP(IPAddress &ip);
+    bool ntpRetryDue();
+    static void ntpResolveTask(void *arg);
     TimeSource last_time_source     = TIME_SRC_NONE;
     TimeSource reported_time_source = TIME_SRC_UNKNOWN;  // para loguear solo en el cambio
     void noteTimeSource(TimeSource source);
@@ -189,6 +202,8 @@ public:
     void init();
     void setUpRTC();
     void forceNTPSync();   // llamado por TaskScheduler cada 24hrs
+    // Fin del arranque: de acá en adelante nada de NTP puede bloquear el loop.
+    void endBootPhase() { boot_phase = false; }
     bool isLoraTc();
     // ¿La config pide TLS para MQTT? (clave USE_TLS en config.txt). Default false.
     bool isTLSEnabled() const { return use_tls; }
@@ -219,6 +234,7 @@ public:
     uint64_t readAnalogInput(uint8_t input);
     float getOneWireTempFrom(DeviceAddress address); // ----> NOT DEFINED YET
     void writeAnalogOutput(uint8_t output, uint8_t value);
+    uint8_t getAirDuty() const { return air_duty; }
     void writeDigitalOutput(uint8_t output, uint8_t value);
     String jsonBuilder(String keys[], float values[], int length);
     void turnOnFan(bool value, bool CCW = false);

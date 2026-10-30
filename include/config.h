@@ -8,9 +8,10 @@
 #define HIGH_TEMP_LIMIT 60
 #define LOW_TEMP_LIMIT -40
 
-// Linear calibration of the analog temperature probes:
+// FACTORY ramp of the analog temperature probes:
 // temperature (deg C) = raw ADC value * slope + offset
-// Ta and Ts have separate parameters so each probe can be calibrated independently.
+// Used only while a probe has no 3-point calibration in /calibration.txt, which is made
+// per room from the web wizard (/calibration). See src/hardware/Calibration.h.
 // SICK Raja 
 //#define TS_TEMP_SLOPE  0.0571f
 //#define TS_TEMP_OFFSET (-87.9f)
@@ -21,6 +22,10 @@
 
 #define TS_TEMP_SLOPE  0.0263f
 #define TS_TEMP_OFFSET (-64.5f)
+
+// Tc no tenía rampa propia: caía al valor fijo de rawToTemp(), idéntico al de Ta.
+#define TC_TEMP_SLOPE  0.0263f
+#define TC_TEMP_OFFSET (-64.5f)
 
 // // TaoBao Yann
 //#define TA_TEMP_SLOPE  0.0613f

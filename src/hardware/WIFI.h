@@ -15,6 +15,8 @@
 #include "./hardware/Logger.h"
 #include "resources/WebFiles.h"
 #include "EventLog.h"
+#include "RemoteControl.h"
+#include "Calibration.h"
 #include <vector>
 
 #define SSID_SIZE 32

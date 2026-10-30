@@ -1,10 +1,11 @@
 #include "Controller.h"
 
 RTC_DS3231 rtc;
-WiFiUDP ntpUDP;
 Adafruit_MLX90640 mlx;
 TwoWire rtc_i2c = TwoWire(0);
-NTPClient timeClient(ntpUDP);
+#define NTP_SERVER          "pool.ntp.org"
+#define NTP_RETRY_MS        (5UL * 60UL * 1000UL)   // reintento NTP tras un fallo
+#define NTP_DNS_RETRY_MS    (60UL * 1000UL)         // reintento de resolución DNS
 
 // RTC memory: persiste entre reinicios de software (no power-off)
 RTC_DATA_ATTR static uint32_t g_stage2_epoch = 0;
@@ -267,6 +268,7 @@ void Controller::forceNTPSync() {
     DEBUG("NTP sync skipped: no WiFi");
     return;
   }
+  ntp_last_try = 0;   // pedido explícito: no esperar el intervalo de reintento
   if (rtc_connected) {
     syncRTCWithNTP();                // NTP → RTC externo
     DateTime now_utc = rtc.now();
@@ -281,8 +283,9 @@ void Controller::forceNTPSync() {
 
 DateTime Controller::getDateTime() {
   if (tryConnectRTC()) {
-    // Re-sincronizar con NTP si el RTC acaba de reconectar
-    if (rtc_needs_ntp_sync) syncRTCWithNTP();
+    // Re-sincronizar con NTP si el RTC acaba de reconectar. Espaciado: con un DS3231 sin
+    // batería esto se pedía en CADA vuelta del loop.
+    if (rtc_needs_ntp_sync && ntpRetryDue()) syncRTCWithNTP();
 
     DateTime now = rtc.now();
     if (isDateTimeValid(now)) {
@@ -301,7 +304,7 @@ DateTime Controller::getDateTime() {
   }
 
   // Sin RTC externo: primera sync NTP al interno si WiFi disponible
-  if (!ntp_synced_to_internal && wifi.isConnected()) {
+  if (!ntp_synced_to_internal && wifi.isConnected() && ntpRetryDue()) {
     syncNTPToInternalRTC();
   }
 
@@ -350,6 +353,7 @@ bool Controller::readDigitalInput(uint8_t input) {
 
 void Controller::writeAnalogOutput(uint8_t output, uint8_t value) {
   // arduino-esp32 3.x: ledcWrite recibe el PIN, no el canal.
+  air_duty = value;
   ledcWrite(AIR_PIN, value);
 }
 
@@ -362,20 +366,11 @@ void Controller::writeDigitalOutput(uint8_t output, uint8_t value) {
 // esto se comporta igual que la fórmula única de antes. Cualquier otro canal
 // cae a la histórica.
 float Controller::rawToTemp(uint16_t raw, uint8_t channel) {
-  float slope  = 0.0263f;
-  float offset = -64.5f;
-
-  if (channel == TA_AI) {
-    slope  = TA_TEMP_SLOPE;
-    offset = TA_TEMP_OFFSET;
-  } else if (channel == TS_AI) {
-    slope  = TS_TEMP_SLOPE;
-    offset = TS_TEMP_OFFSET;
-  }
-
-  // const float voltage_ch = (raw * voltage_per_step);
-  // const float temp = (voltage_ch * temperature_per_step) + TEMPERATURE_MIN;
-  return raw * slope + offset;
+  // Calibración de 3 puntos del cuarto si la hay; si no, la rampa de fábrica de config.h.
+  if (channel == TA_AI) return calApply(calib.active(CAL_TA), raw, TA_TEMP_SLOPE, TA_TEMP_OFFSET);
+  if (channel == TS_AI) return calApply(calib.active(CAL_TS), raw, TS_TEMP_SLOPE, TS_TEMP_OFFSET);
+  if (channel == TC_AI) return calApply(calib.active(CAL_TC), raw, TC_TEMP_SLOPE, TC_TEMP_OFFSET);
+  return raw * 0.0263f - 64.5f;   // cualquier otro canal: la rampa histórica
 }
 
 // Devuelve el slot de mediana del pin, reservando uno la primera vez que se usa.
@@ -840,19 +835,24 @@ void Controller::syncRTCWithNTP() {
     return;
   }
 
-  timeClient.begin();
-  timeClient.setTimeOffset(SECS_IN_HR * TIME_ZONE_OFFSET_HRS);
-  timeClient.setUpdateInterval(SECS_IN_HR);
+  IPAddress server;
+  if (!ntpServerIP(server)) {
+    DEBUG("NTP sync skipped: NTP server not resolved yet");
+    return;
+  }
 
-  bool updated = timeClient.update();
-  if (!updated) updated = timeClient.forceUpdate();
+  WiFiUDP udp;
+  NTPClient timeClient(udp, server, SECS_IN_HR * TIME_ZONE_OFFSET_HRS);
+  timeClient.begin();
+  const bool updated = timeClient.forceUpdate();   // ~1 s de timeout, sin DNS
+  const unsigned long epochTime = timeClient.getEpochTime();
+  timeClient.end();
 
   if (!updated) {
     DEBUG("NTP sync failed: no response");
     return;
   }
 
-  const unsigned long epochTime = timeClient.getEpochTime();
   if (epochTime < 1700000000UL) {
     DEBUG("NTP sync failed: invalid epoch");
     return;
@@ -881,6 +881,47 @@ DateTime Controller::buildFallbackDateTime() const {
   return rtc_last_valid_datetime + TimeSpan(elapsedSeconds);
 }
 
+// true si toca intentar NTP desde el loop: la primera vez siempre, después de un fallo
+// solo cada NTP_RETRY_MS. Sin esto un RTC con fecha inválida pedía NTP en cada vuelta.
+bool Controller::ntpRetryDue() {
+  if (ntp_last_try != 0 && millis() - ntp_last_try < NTP_RETRY_MS) return false;
+  ntp_last_try = millis() | 1;   // nunca 0: 0 significa "no se ha intentado"
+  return true;
+}
+
+// IP del servidor NTP. Durante setup() se resuelve en el acto (puede tardar, pero el
+// watchdog todavía no está armado). Después, si falta, se lanza la resolución en una task
+// aparte y se devuelve false: el loop NO espera al DNS.
+bool Controller::ntpServerIP(IPAddress &ip) {
+  if (ntp_ip == 0 && wifi.isConnected()) {
+    if (boot_phase) {
+      // Un solo intento en todo el arranque: con el DNS caído cada uno cuesta ~15 s.
+      if (ntp_dns_last_try != 0) return false;
+      ntp_dns_last_try = millis() | 1;
+      IPAddress resolved;
+      if (WiFi.hostByName(NTP_SERVER, resolved) == 1 && (uint32_t)resolved != 0) ntp_ip = (uint32_t)resolved;
+    } else if (!ntp_dns_busy && (ntp_dns_last_try == 0 || millis() - ntp_dns_last_try >= NTP_DNS_RETRY_MS)) {
+      ntp_dns_last_try = millis() | 1;
+      ntp_dns_busy = true;
+      if (xTaskCreatePinnedToCore(ntpResolveTask, "ntp_dns", 4096, this, 1, nullptr, 0) != pdPASS) ntp_dns_busy = false;
+    }
+  }
+  if (ntp_ip == 0) return false;
+  ip = IPAddress(ntp_ip);
+  return true;
+}
+
+void Controller::ntpResolveTask(void *arg) {
+  Controller *self = static_cast<Controller *>(arg);
+  IPAddress resolved;
+  if (WiFi.hostByName(NTP_SERVER, resolved) == 1 && (uint32_t)resolved != 0) {
+    self->ntp_ip = (uint32_t)resolved;
+    self->ntp_last_try = 0;   // recién resuelto: el próximo getDateTime() puede intentar ya
+  }
+  self->ntp_dns_busy = false;
+  vTaskDelete(nullptr);
+}
+
 void Controller::syncInternalRTC(const DateTime& dt) {
   struct timeval tv;
   tv.tv_sec  = (time_t)dt.unixtime();
@@ -901,11 +942,18 @@ bool Controller::syncNTPToInternalRTC() {
   // Lo canónico sería guardar UTC en todos lados y sumar el offset al retornar, pero los
   // DS3231 ya desplegados contienen local: cambiar la convención los haría saltar 8 h
   // atrás al actualizar. Esto arregla el caso roto sin tocar los equipos sanos.
-  NTPClient localClient(localUDP, "pool.ntp.org", SECS_IN_HR * TIME_ZONE_OFFSET_HRS, 60000);
+  IPAddress server;
+  if (!ntpServerIP(server)) {
+    DEBUG("NTP->internal RTC skipped: NTP server not resolved yet");
+    return false;
+  }
+  NTPClient localClient(localUDP, server, SECS_IN_HR * TIME_ZONE_OFFSET_HRS, 60000);
   localClient.begin();
 
+  // Cada intento espera hasta ~1 s. Dos intentos mantienen el peor caso muy por debajo
+  // del watchdog; si fallan, getDateTime() vuelve a probar en NTP_RETRY_MS.
   bool ok = false;
-  const uint8_t max_attempts = 5;
+  const uint8_t max_attempts = 2;
   for (uint8_t i = 0; i < max_attempts && !ok; i++) {
     if (localClient.update()) {
       const unsigned long epochTime = localClient.getEpochTime();

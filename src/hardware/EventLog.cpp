@@ -182,8 +182,7 @@ void EventLog::formatStamp(const EventRecord &rec, char *buf, size_t len) {
 
 // Copia completa en la SD: el anillo de SPIFFS se recorta en 1000, esto no.
 void EventLog::appendSD(const EventRecord *recs, uint8_t count) {
-    if (count == 0 || !logger.hasSD()) return;
-    if (!SD.exists(LOG_FOLDER_PATH)) SD.mkdir(LOG_FOLDER_PATH);
+    if (count == 0 || !logger.ensureLogFolder()) return;
 
     File f = SD.open(EVENT_SD_FILE, FILE_APPEND);
     if (!f) return;

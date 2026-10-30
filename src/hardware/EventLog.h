@@ -86,6 +86,8 @@ public:
     void cycleClear() { cycle_active = false; }
 
     void setStage(uint8_t stage) { current_stage = stage; }
+    uint16_t cycle() const      { return current_cycle; }
+    bool     cycleActive() const { return cycle_active; }
 
     // SOLO backgroundTasks (core 0).
     void drain();
