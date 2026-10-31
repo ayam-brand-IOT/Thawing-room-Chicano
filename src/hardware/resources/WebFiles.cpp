@@ -9,7 +9,7 @@
 // ============================================================================
 
 // Reusable bits kept as macros so every page shares the exact same chrome.
-#define NAV_BLOCK(control,home,events,logs,cfg) \
+#define NAV_BLOCK(control,home,events,logs,cfg,help) \
 "    <aside class=\"sidebar\">\n" \
 "      <div class=\"brand\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M12 2v20M3 12h18M5.2 5.2l13.6 13.6M18.8 5.2 5.2 18.8\"/></svg>Thawing Room</div>\n" \
 "      <nav>\n" \
@@ -18,6 +18,7 @@
 "        <a href=\"/events\" " events "><svg width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 12h4l3-8 4 16 3-8h4\"/></svg>Events</a>\n" \
 "        <a href=\"/logs\" " logs "><svg width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z\"/><path d=\"M14 3v5h5M9 13h6M9 17h4\"/></svg>Logs</a>\n" \
 "        <a href=\"/edit-settings\" " cfg "><svg width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 7h11M4 17h7\"/><circle cx=\"18\" cy=\"7\" r=\"2.5\"/><circle cx=\"14\" cy=\"17\" r=\"2.5\"/></svg>Settings</a>\n" \
+"        <a href=\"/help\" " help "><svg width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M9.5 9.2a2.6 2.6 0 0 1 5 .9c0 1.7-2.5 2.2-2.5 3.9\"/><path d=\"M12 17h.01\"/></svg>Help</a>\n" \
 "      </nav>\n" \
 "      <div class=\"spacer\"></div>\n" \
 "      <div class=\"meta\">{{LOCATION}} &middot; v{{VERSION}}</div>\n" \
@@ -35,7 +36,7 @@ const char* SERVER_INDEX_HTML = R"RAW_HTML(
   </head>
   <body>
 )RAW_HTML"
-  NAV_BLOCK("", "class=\"active\" aria-current=\"page\"", "", "", "")
+  NAV_BLOCK("", "class=\"active\" aria-current=\"page\"", "", "", "", "")
   R"RAW_HTML(
     <div class="content">
       <main class="page">
@@ -237,7 +238,7 @@ const char* EDIT_SETTINGS_HTML = R"RAW_HTML(
   </head>
   <body>
 )RAW_HTML"
-  NAV_BLOCK("", "", "", "", "class=\"active\" aria-current=\"page\"")
+  NAV_BLOCK("", "", "", "", "class=\"active\" aria-current=\"page\"", "")
   R"RAW_HTML(
     <div class="content">
       <main class="page">
@@ -298,7 +299,7 @@ const char* LOGS_HTML = R"RAW_HTML(
   </head>
   <body>
 )RAW_HTML"
-  NAV_BLOCK("", "", "", "class=\"active\" aria-current=\"page\"", "")
+  NAV_BLOCK("", "", "", "class=\"active\" aria-current=\"page\"", "", "")
   R"RAW_HTML(
     <div class="content">
       <main class="page">
@@ -358,7 +359,7 @@ const char* EVENTS_HTML = R"RAW_HTML(
   </head>
   <body>
 )RAW_HTML"
-  NAV_BLOCK("", "", "class=\"active\" aria-current=\"page\"", "", "")
+  NAV_BLOCK("", "", "class=\"active\" aria-current=\"page\"", "", "", "")
   R"RAW_HTML(
     <div class="content">
       <main class="page">
@@ -810,7 +811,7 @@ const char* CONTROL_HTML = R"RAW_HTML(
   </head>
   <body>
 )RAW_HTML"
-  NAV_BLOCK("class=\"active\" aria-current=\"page\"", "", "", "", "")
+  NAV_BLOCK("class=\"active\" aria-current=\"page\"", "", "", "", "", "")
   R"RAW_HTML(
     <div class="content">
       <main class="page">
@@ -1401,7 +1402,7 @@ const char* CALIBRATION_HTML = R"RAW_HTML(
   </head>
   <body>
 )RAW_HTML"
-  NAV_BLOCK("", "", "", "", "class=\"active\" aria-current=\"page\"")
+  NAV_BLOCK("", "", "", "", "class=\"active\" aria-current=\"page\"", "")
   R"RAW_HTML(
     <div class="content">
       <main class="page">
@@ -1869,6 +1870,128 @@ const char* CALIBRATION_HTML = R"RAW_HTML(
 </html>
 )RAW_HTML";
 
+const char* HELP_HTML = R"RAW_HTML(
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Thawing Room &middot; Help</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" type="text/css" href="style.css" />
+  </head>
+  <body>
+)RAW_HTML"
+  NAV_BLOCK("", "", "", "", "", "class=\"active\" aria-current=\"page\"")
+  R"RAW_HTML(
+    <div class="content">
+      <main class="page">
+        <div class="topbar">
+          <div>
+            <h1>Help</h1>
+            <p class="sub">Quick guide for running the room. Works without internet.</p>
+          </div>
+          <a class="btn btn--ghost ev-btn-sm" href="https://ayam-brand-iot.github.io/thawingroom/" target="_blank" rel="noopener">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5z"/><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z"/></svg>
+            Full manual
+          </a>
+        </div>
+
+        <nav class="hp-jump" aria-label="On this page">
+          <a href="#buttons">Buttons</a><a href="#lights">Lights</a><a href="#stages">Stages</a><a href="#stop">Stop or finish</a><a href="#problems">Problems</a><a href="#pages">This website</a>
+        </nav>
+
+        <section class="hp-sec" id="buttons" aria-labelledby="h-buttons">
+          <h2 id="h-buttons">Which button?</h2>
+          <div class="hp-choose">
+            <div class="hp-choice hp-go">
+              <span class="hp-q"><b>Fish is in.</b> Thaw it now.</span>
+              <span class="hp-press"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8 5.5v13a1 1 0 0 0 1.5.9l10.4-6.5a1 1 0 0 0 0-1.8L9.5 4.6A1 1 0 0 0 8 5.5z"/></svg>START</span>
+              <span>Goes straight to <b>Stage 2</b>.</span>
+            </div>
+            <div class="hp-choice hp-later">
+              <span class="hp-q"><b>Fish is in.</b> Thaw it later.</span>
+              <span class="hp-press"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></g></svg>D-START</span>
+              <span>Waits in <b>Stage 1</b>, then starts Stage 2 at the set time. Set the time in the SCADA or on <a href="/control">Control</a> first.</span>
+            </div>
+            <div class="hp-choice hp-halt">
+              <span class="hp-q"><b>Fish is leaving</b>, or something is wrong.</span>
+              <span class="hp-press"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2.5" fill="currentColor"/></svg>STOP</span>
+              <span>Everything turns off. STOP always works.</span>
+            </div>
+          </div>
+          <p class="hp-note">The SCADA and the <a href="/control">Control</a> page have the same three commands. After a power cut the room comes back <b>in the same stage</b> by itself.</p>
+        </section>
+
+        <section class="hp-sec" id="lights" aria-labelledby="h-lights">
+          <h2 id="h-lights">The stage lights</h2>
+          <div class="card hp-lights">
+            <div class="hp-light"><span class="hp-lamps"><i></i><i></i><i></i></span><b>All off</b><span>Idle. Ready to start.</span></div>
+            <div class="hp-light"><span class="hp-lamps"><i class="on"></i><i></i><i></i></span><b>Light 1</b><span>Stage 1. Waiting for the set time.</span></div>
+            <div class="hp-light"><span class="hp-lamps"><i></i><i class="on"></i><i></i></span><b>Light 2</b><span>Stage 2. Thawing.</span></div>
+            <div class="hp-light"><span class="hp-lamps"><i></i><i></i><i class="on"></i></span><b>Light 3</b><span>Stage 3. Fish is ready: press STOP when it leaves.</span></div>
+            <div class="hp-light hp-light--lock"><span class="hp-lamps"><i class="blink"></i><i class="blink"></i><i class="blink"></i></span><b>All blinking</b><span>Maintenance lockdown. Nothing can start. Ask the supervisor.</span></div>
+          </div>
+        </section>
+
+        <section class="hp-sec" id="stages" aria-labelledby="h-stages">
+          <h2 id="h-stages">The 3 stages</h2>
+          <div class="hp-stages">
+            <div class="card hp-stage hp-s1"><span class="hp-badge">1</span><b>Wait</b><span>Fans and sprinkler cycle. Air off.</span><span class="hp-ends">Goes to Stage 2 <b>at the set time</b>.</span></div>
+            <div class="card hp-stage hp-s2"><span class="hp-badge">2</span><b>Thaw</b><span>Fans, air in and sprinkler.</span><span class="hp-ends">Goes to Stage 3 when <b>both Ts and Tc</b> reach their target.</span></div>
+            <div class="card hp-stage hp-s3"><span class="hp-badge">3</span><b>Hold</b><span>Fans and sprinkler. Air off.</span><span class="hp-ends"><b>Never ends by itself.</b> Press STOP when the fish leaves.</span></div>
+          </div>
+          <div class="hp-probes">
+            <span><b>Ta</b> room air</span><span><b>Ts</b> under a fish plate</span><span><b>Tc</b> pushed into a fish</span>
+          </div>
+          <p class="hp-note hp-note--warn">Keep the Tc probe inside a fish during the whole cycle. Without it Stage 2 can end too early or never end.</p>
+        </section>
+
+        <section class="hp-sec" id="stop" aria-labelledby="h-stop">
+          <h2 id="h-stop">Stop or finish</h2>
+          <div class="hp-outcomes">
+            <div class="hp-outcome hp-fin"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="m7.5 12.3 3 3 6-6.6"/></g></svg><div><b>STOP in Stage 3 = Finished</b><span>The normal end. Saved as finished.</span></div></div>
+            <div class="hp-outcome hp-early"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="m9 9 6 6M15 9l-6 6"/></g></svg><div><b>STOP in Stage 1 or 2 = Stopped early</b><span>Can't continue. A new START begins a new cycle.</span></div></div>
+          </div>
+        </section>
+
+        <section class="hp-sec" id="problems" aria-labelledby="h-problems">
+          <h2 id="h-problems">Problems</h2>
+          <div class="card hp-problems">
+            <div class="hp-prob"><span class="hp-lamps hp-lamps--sm"><i class="blink"></i><i class="blink"></i><i class="blink"></i></span><div><b>All lights blinking, START does nothing</b><span>Maintenance lockdown. Only the supervisor can lift it.</span></div></div>
+            <div class="hp-prob"><span class="hp-ico hp-ico--red"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4v10.5a4 4 0 1 1-4 0V4a2 2 0 1 1 4 0z"/><path d="M12 17.5v-6"/></g></svg></span><div><b>A temperature is red</b><span>That probe reads wrong; the room keeps the last good value. Check the cable and that Tc is in the fish. Tell the supervisor.</span></div></div>
+            <div class="hp-prob"><span class="hp-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8 5.5v13a1 1 0 0 0 1.5.9l10.4-6.5a1 1 0 0 0 0-1.8L9.5 4.6A1 1 0 0 0 8 5.5z"/></svg></span><div><b>START does nothing</b><span>A stage light is on: the room is already running. Press STOP first only if you really need a new cycle.</span></div></div>
+            <div class="hp-prob"><span class="hp-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></g></svg></span><div><b>Stage 2 takes too long</b><span>On <a href="/control">Control</a>, check the ✕ / ✓ boxes. A value that never moves can be a bad probe: call the supervisor.</span></div></div>
+            <div class="hp-prob"><span class="hp-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v9"/><path d="M6.4 6.4a8 8 0 1 0 11.2 0"/></g></svg></span><div><b>After a power cut</b><span>The room comes back in the same stage. Don't press START again.</span></div></div>
+            <div class="hp-prob"><span class="hp-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.6 16a5 5 0 0 1 6.8 0"/><circle cx="12" cy="19.3" r="1" fill="currentColor"/></g></svg></span><div><b>A page says “Offline”</b><span>The room keeps working. Check your phone is on the plant Wi-Fi; the page retries by itself.</span></div></div>
+          </div>
+        </section>
+
+        <section class="hp-sec" id="pages" aria-labelledby="h-pages">
+          <h2 id="h-pages">This website</h2>
+          <div class="hp-pages">
+            <a class="card linkcard" href="/control"><b>Control</b><span>Stage, temperatures, equipment. Start and stop.</span></a>
+            <a class="card linkcard" href="/events"><b>Events</b><span>Who started, moved and stopped the process, and when.</span></a>
+            <a class="card linkcard" href="/logs"><b>Logs</b><span>Detailed files on the SD card, to download.</span></a>
+            <a class="card linkcard" href="/edit-settings"><b>Settings</b><span>Supervisor: parameters, network, sensor calibration.</span></a>
+            <a class="card linkcard" href="/"><b>Device</b><span>Supervisor: firmware update and restart.</span></a>
+          </div>
+          <p class="hp-note">The <a href="https://ayam-brand-iot.github.io/thawingroom/" target="_blank" rel="noopener">full manual</a> has pictures of every screen. It needs internet, so it may not open on the plant Wi-Fi.</p>
+        </section>
+      </main>
+      <footer class="footer">
+        <span>Thawing Room &middot; {{LOCATION}}</span>
+        <span>v{{VERSION}} &middot; <span class="tnum" id="clock">--:--:--</span></span>
+      </footer>
+    </div>
+    <script>
+      function tick(){ document.getElementById('clock').textContent = new Date().toLocaleTimeString(); }
+      setInterval(tick, 1000); tick();
+    </script>
+  </body>
+</html>
+)RAW_HTML";
+
 const char* EDIT_CONFIG_HTML = R"RAW_HTML(
 <!DOCTYPE html>
 <html lang="en">
@@ -1881,7 +2004,7 @@ const char* EDIT_CONFIG_HTML = R"RAW_HTML(
   </head>
   <body>
 )RAW_HTML"
-  NAV_BLOCK("", "", "", "", "class=\"active\" aria-current=\"page\"")
+  NAV_BLOCK("", "", "", "", "class=\"active\" aria-current=\"page\"", "")
   R"RAW_HTML(
     <div class="content">
       <main class="page">
@@ -2642,6 +2765,70 @@ a.linkcard:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
 .dv-msg.is-ok{background:rgba(31,138,76,.1);color:#17683a;}
 .dv-msg.is-error{background:var(--danger-soft);color:#8f2a1d;}
 .dv-msg.is-wait{background:var(--accent-soft);color:#0a5cae;}
+/* Help */
+html{scroll-behavior:smooth;}
+.hp-jump{display:flex;flex-wrap:wrap;gap:6px;margin:-6px 0 26px;}
+.hp-jump a{display:inline-flex;align-items:center;height:32px;padding:0 12px;border:1px solid var(--border);border-radius:999px;
+  background:var(--surface);color:var(--ink);font-size:.84rem;font-weight:500;}
+.hp-jump a:hover{border-color:var(--accent);color:var(--accent);}
+.hp-sec{display:flex;flex-direction:column;gap:14px;margin-bottom:34px;scroll-margin-top:16px;}
+.hp-sec h2{font-size:1.15rem;font-weight:650;}
+.hp-note{margin:0;max-width:70ch;color:var(--ink-muted);font-size:.9rem;}
+.hp-note--warn{padding:10px 14px;border-radius:9px;background:var(--danger-soft);color:#8f2a1d;font-weight:500;}
+.hp-choose{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;}
+.hp-choice{display:flex;flex-direction:column;gap:8px;padding:16px 18px;background:var(--surface);border:1px solid var(--border);
+  border-top:5px solid var(--c);border-radius:var(--radius);box-shadow:var(--shadow-sm);font-size:.9rem;}
+.hp-go{--c:var(--success);} .hp-later{--c:var(--accent);} .hp-halt{--c:var(--danger);}
+.hp-q{color:var(--ink-muted);} .hp-q b{color:var(--ink);}
+.hp-press{display:flex;align-items:center;gap:8px;color:var(--c);font-size:1.45rem;font-weight:750;letter-spacing:.02em;}
+.hp-press svg{width:28px;height:28px;flex:none;}
+.hp-lights{gap:0;padding:6px 20px;}
+.hp-light{display:grid;grid-template-columns:92px 120px 1fr;align-items:center;gap:14px;padding:11px 0;border-top:1px solid var(--border);font-size:.9rem;}
+.hp-light:first-child{border-top:0;}
+.hp-light span:last-child{color:var(--ink-muted);}
+.hp-light--lock b{color:#7a5000;}
+.hp-lamps{display:inline-flex;gap:6px;padding:6px 9px;background:#2a3842;border-radius:999px;justify-self:start;}
+.hp-lamps i{width:16px;height:16px;border-radius:50%;background:#4a5964;border:2px solid #11191f;}
+.hp-lamps i.on{background:#ffcf4a;box-shadow:0 0 8px #ffcf4a;}
+.hp-lamps i.blink{animation:hpBlink 1s steps(1,end) infinite;}
+.hp-lamps--sm i{width:12px;height:12px;}
+@keyframes hpBlink{0%{background:#ffcf4a;box-shadow:0 0 8px #ffcf4a;}50%{background:#4a5964;box-shadow:none;}}
+.hp-stages{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;}
+.hp-stage{gap:6px;padding:16px 18px;font-size:.88rem;}
+.hp-stage > span{color:var(--ink-muted);}
+.hp-stage b{font-size:1.1rem;}
+.hp-badge{display:grid;place-items:center;width:36px;height:36px;border-radius:9px;background:var(--c);color:#fff !important;font-weight:750;font-size:1.1rem;}
+.hp-s1{--c:#6d9fd0;} .hp-s2{--c:var(--accent);} .hp-s3{--c:var(--success);}
+.hp-stage .hp-ends{margin-top:4px;padding:9px 11px;border:1.5px dashed var(--border);border-radius:8px;color:var(--ink);}
+.hp-probes{display:flex;flex-wrap:wrap;gap:8px;}
+.hp-probes span{padding:5px 11px;border-radius:999px;background:var(--surface);border:1px solid var(--border);font-size:.84rem;color:var(--ink-muted);}
+.hp-probes b{color:var(--ink);}
+.hp-outcomes{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;}
+.hp-outcome{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-radius:var(--radius);font-size:.9rem;}
+.hp-outcome svg{width:30px;height:30px;flex:none;}
+.hp-outcome b{display:block;font-size:1rem;}
+.hp-fin{background:rgba(31,138,76,.1);} .hp-fin svg,.hp-fin b{color:#17683a;}
+.hp-early{background:var(--danger-soft);} .hp-early svg,.hp-early b{color:#a5311f;}
+.hp-outcome span{color:var(--ink-muted);}
+.hp-problems{gap:0;padding:6px 20px;}
+.hp-prob{display:grid;grid-template-columns:72px 1fr;align-items:center;gap:14px;padding:12px 0;border-top:1px solid var(--border);font-size:.9rem;}
+.hp-prob:first-child{border-top:0;}
+.hp-prob b{display:block;}
+.hp-prob span{color:var(--ink-muted);}
+.hp-prob .hp-lamps{justify-self:start;}
+.hp-ico{display:grid;place-items:center;width:40px;height:40px;border-radius:10px;background:var(--surface-2);color:var(--ink-muted);}
+.hp-ico svg{width:22px;height:22px;}
+.hp-ico--red{background:var(--danger-soft);color:var(--danger);}
+.hp-pages{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;}
+.hp-pages .card{gap:4px;padding:14px 16px;font-size:.84rem;}
+.hp-pages .card b{font-size:.95rem;}
+.hp-pages .card span{color:var(--ink-muted);}
+@media (max-width:760px){
+  .hp-light{grid-template-columns:auto 1fr;grid-template-areas:"lamps name" "text text";gap:6px 12px;}
+  .hp-light .hp-lamps{grid-area:lamps;} .hp-light b{grid-area:name;} .hp-light span:last-child{grid-area:text;}
+  .hp-prob{grid-template-columns:auto 1fr;}
+}
+@media (prefers-reduced-motion:reduce){ .hp-lamps i.blink{animation:none;background:#ffcf4a;} html{scroll-behavior:auto;} }
 /* Footer */
 .footer{position:sticky;bottom:0;display:flex;align-items:center;justify-content:space-between;gap:16px;
   padding:9px 28px;background:var(--surface);border-top:1px solid var(--border);

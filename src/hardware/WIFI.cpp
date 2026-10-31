@@ -478,6 +478,13 @@ void WIFI::setUpWebServer(bool brigeSerial){
     request->send(ok ? 200 : 409, "application/json", body);
   });
 
+  // Guía rápida para operadores, embebida: la red de planta no tiene internet y el manual
+  // completo (GitHub Pages) puede no abrir desde ahí.
+  server.on("/help", HTTP_GET, [this](AsyncWebServerRequest *request) {
+    if (!request->authenticate(www_username, www_password)) return request->requestAuthentication();
+    request->send(200, "text/html", setLayOutInfo(HELP_HTML));
+  });
+
   server.onNotFound([](AsyncWebServerRequest *request) {
       // En modo AP, cualquier URL desconocida redirige al portal (captive portal):
       // así el navegador/teléfono abre solo la página de configuración.
