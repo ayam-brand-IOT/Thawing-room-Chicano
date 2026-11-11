@@ -59,6 +59,13 @@
 #define STOP_IO     PORT_B2
 #define DLY_S_IO    PORT_B1   
 
+// Selector físico del tablero que prende los fans a mano, saltándose al controlador
+// (override). Solo se LEE para dejar constancia: el firmware no mueve nada con esto.
+// Contacto seco a GND con el pull-up interno: cerrado = override activo.
+#define FAN_OVERRIDE_IO       PORT_B3
+#define FAN_OVERRIDE_ACTIVE   LOW
+#define FAN_OVERRIDE_STABLE_MS 500   // el estado tiene que sostenerse esto antes de contarlo
+
 // #define A0    13 //ONE_WIRE_BUS  
 
 #define TA_AI       AI_0

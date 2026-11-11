@@ -105,6 +105,7 @@
 #define IR_TS                   "IR_TS"
 #define REMAINING_D_START       "REMAINING_DELAY_START"
 #define MAINTENANCE_STATE       "maintenance_state"   // 1/0: estado vigente del bloqueo
+#define FAN_OVERRIDE_STATE      "fan_override"        // 1/0: fans prendidos a mano desde el selector del tablero
 
 // ERROR MESSAGES
 #define ON_CONNECTION_ERR_TXT "Error on connection"

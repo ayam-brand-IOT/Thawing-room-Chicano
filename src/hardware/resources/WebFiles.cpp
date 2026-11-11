@@ -1138,18 +1138,24 @@ const char* CONTROL_HTML = R"RAW_HTML(
         $('temps').innerHTML = html;
       }
 
+      // on: true, false o 'warn' (encendido, pero no por el controlador)
       function eqItem(icon, title, detail, state, on, extra){
         return '<li class="ct-eq-item' + (on ? ' is-on' : '') + '">' +
           '<span class="ct-eq-icon">' + icon + '</span>' +
           '<div class="ct-eq-text"><b>' + title + '</b><span>' + detail + '</span>' + (extra || '') + '</div>' +
-          '<span class="ct-state' + (on ? ' is-on' : '') + '">' + state + '</span></li>';
+          '<span class="ct-state' + (on === 'warn' ? ' is-warn' : on ? ' is-on' : '') + '">' + state + '</span></li>';
       }
       function renderEquipment(){
         var s = st.s, o = s.out, g = s.stage, html = '';
         var fanDetail = 'Idle';
         if (g >= 1 && g <= 3) fanDetail = s.starting ? 'Starting after the 5 s safety delay' : (s.step ? 'Step ' + s.step + ' of 4, ' + STEP_NAMES[s.step] : 'Starting');
-        html += eqItem(svg(ICONS.fan, 18, o.fan ? 'ct-spin' + (o.rev ? ' ct-spin--rev' : '') : ''), 'Fan F1', fanDetail,
-                       o.fan ? (o.rev ? 'Reverse' : 'Forward') : 'Off', o.fan);
+        if (o.ov) {
+          // El selector del tablero manda: el relé del controlador no dice si los fans giran.
+          html += eqItem(svg(ICONS.fan, 18, 'ct-spin'), 'Fan F1', 'Switched on by hand at the panel', 'Override', 'warn');
+        } else {
+          html += eqItem(svg(ICONS.fan, 18, o.fan ? 'ct-spin' + (o.rev ? ' ct-spin--rev' : '') : ''), 'Fan F1', fanDetail,
+                         o.fan ? (o.rev ? 'Reverse' : 'Forward') : 'Off', o.fan);
+        }
 
         var max = o.air_max || 63, pct = Math.round(Math.min(o.air, max) / max * 100);
         var airDetail = o.air > max
@@ -1181,6 +1187,7 @@ const char* CONTROL_HTML = R"RAW_HTML(
         PROBES.forEach(function(p){
           if (s.temps[p.f]) list.push(['danger', 'Sensor ' + p.name + ' (' + p.label.toLowerCase() + ') is out of range. The last good value is being used; check the probe and its cable.']);
         });
+        if (s.out.ov) list.push(['warn', 'The fans were switched on by hand: the <b>fan override</b> switch on the panel is ON. The controller isn&rsquo;t driving them until it&rsquo;s switched back.']);
         if (s.link.wifi && !s.link.mqtt) list.push(['warn', 'The SCADA can&rsquo;t see this room right now: the MQTT broker is unreachable.']);
         $('notices').innerHTML = list.map(function(n){
           return '<div class="ct-notice' + (n[0] === 'danger' ? ' ct-notice--danger' : '') + '" role="status">' + svg(ICONS.warn, 17) + '<span>' + n[1] + '</span></div>';
@@ -2551,6 +2558,8 @@ a.linkcard:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
 .ct-state::before{content:"";width:7px;height:7px;border-radius:50%;background:#8d9cab;}
 .ct-state.is-on{background:rgba(31,138,76,.13);border-color:rgba(31,138,76,.32);color:#17683a;}
 .ct-state.is-on::before{background:var(--success);}
+.ct-state.is-warn{background:rgba(214,148,0,.14);border-color:rgba(214,148,0,.4);color:#6b4600;}
+.ct-state.is-warn::before{background:#d69400;}
 .ct-meter{display:block;max-width:200px;height:6px;margin-top:6px;border:1px solid var(--border);border-radius:999px;
   background:var(--surface-2);overflow:hidden;}
 .ct-meter > i{display:block;height:100%;background:var(--accent);transform-origin:left center;

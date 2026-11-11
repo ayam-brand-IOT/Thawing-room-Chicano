@@ -46,6 +46,7 @@ struct ControlStatus {
     float    pid_setpoint;       // consigna de Ta que calcula el PID (B - A*avgTs)
 
     bool     fan_on, fan_reverse;
+    bool     fan_override;       // selector del tablero: fans prendidos a mano
     bool     damper, sprinkler;
     uint8_t  air_duty, air_max;  // último duty escrito al PWM y su tope (2^RESOLUTION - 1)
 

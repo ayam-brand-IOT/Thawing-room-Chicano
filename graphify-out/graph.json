@@ -9,7 +9,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/test_calibration/test_main.cpp",
       "source_location": "L1",
       "id": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_test_test_calibration_test_main_cpp",
-      "community": 7,
+      "community": 9,
       "norm_label": "test_main.cpp"
     },
     {
@@ -18,7 +18,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/test_configstore/test_main.cpp",
       "source_location": "L18",
       "id": "test_main_setup",
-      "community": 3,
+      "community": 4,
       "norm_label": "setup()"
     },
     {
@@ -27,7 +27,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/test_configstore/test_main.cpp",
       "source_location": "L22",
       "id": "test_main_teardown",
-      "community": 3,
+      "community": 4,
       "norm_label": "teardown()"
     },
     {
@@ -36,7 +36,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/test_calibration/test_main.cpp",
       "source_location": "L10",
       "id": "test_main_makecal",
-      "community": 7,
+      "community": 9,
       "norm_label": "makecal()"
     },
     {
@@ -45,7 +45,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/test_calibration/test_main.cpp",
       "source_location": "L20",
       "id": "test_main_test_sin_calibracion_usa_la_rampa_de_fabrica",
-      "community": 7,
+      "community": 9,
       "norm_label": "test_sin_calibracion_usa_la_rampa_de_fabrica()"
     },
     {
@@ -54,7 +54,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/test_calibration/test_main.cpp",
       "source_location": "L25",
       "id": "test_main_test_pasa_exacto_por_los_tres_puntos",
-      "community": 7,
+      "community": 9,
       "norm_label": "test_pasa_exacto_por_los_tres_puntos()"
     },
     {
@@ -63,7 +63,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/test_calibration/test_main.cpp",
       "source_location": "L32",
       "id": "test_main_test_interpola_recto_dentro_de_cada_tramo",
-      "community": 7,
+      "community": 9,
       "norm_label": "test_interpola_recto_dentro_de_cada_tramo()"
     },
     {
@@ -72,7 +72,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/test_calibration/test_main.cpp",
       "source_location": "L38",
       "id": "test_main_test_extrapola_con_el_tramo_de_la_orilla",
-      "community": 7,
+      "community": 9,
       "norm_label": "test_extrapola_con_el_tramo_de_la_orilla()"
     },
     {
@@ -81,7 +81,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/test_calibration/test_main.cpp",
       "source_location": "L45",
       "id": "test_main_test_es_monotona",
-      "community": 7,
+      "community": 9,
       "norm_label": "test_es_monotona()"
     },
     {
@@ -90,7 +90,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/test_calibration/test_main.cpp",
       "source_location": "L57",
       "id": "test_main_test_ordena_los_puntos_por_cuentas",
-      "community": 7,
+      "community": 9,
       "norm_label": "test_ordena_los_puntos_por_cuentas()"
     },
     {
@@ -99,7 +99,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/test_calibration/test_main.cpp",
       "source_location": "L65",
       "id": "test_main_test_rechaza_lazo_abierto",
-      "community": 7,
+      "community": 9,
       "norm_label": "test_rechaza_lazo_abierto()"
     },
     {
@@ -108,7 +108,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/test_calibration/test_main.cpp",
       "source_location": "L70",
       "id": "test_main_test_rechaza_puntos_muy_cercanos",
-      "community": 7,
+      "community": 9,
       "norm_label": "test_rechaza_puntos_muy_cercanos()"
     },
     {
@@ -117,7 +117,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/test_calibration/test_main.cpp",
       "source_location": "L75",
       "id": "test_main_test_rechaza_temperaturas_al_reves",
-      "community": 7,
+      "community": 9,
       "norm_label": "test_rechaza_temperaturas_al_reves()"
     },
     {
@@ -126,7 +126,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/test_calibration/test_main.cpp",
       "source_location": "L80",
       "id": "test_main_test_rechaza_pendiente_imposible",
-      "community": 7,
+      "community": 9,
       "norm_label": "test_rechaza_pendiente_imposible()"
     },
     {
@@ -135,7 +135,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/test_calibration/test_main.cpp",
       "source_location": "L86",
       "id": "test_main_test_rechaza_referencia_faltante",
-      "community": 7,
+      "community": 9,
       "norm_label": "test_rechaza_referencia_faltante()"
     },
     {
@@ -144,7 +144,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/test_configstore/test_main.cpp",
       "source_location": "L79",
       "id": "test_main_main",
-      "community": 3,
+      "community": 4,
       "norm_label": "main()"
     },
     {
@@ -153,7 +153,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/test_configstore/test_main.cpp",
       "source_location": "L1",
       "id": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_test_test_configstore_test_main_cpp",
-      "community": 3,
+      "community": 4,
       "norm_label": "test_main.cpp"
     },
     {
@@ -162,7 +162,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/test_configstore/test_main.cpp",
       "source_location": "L14",
       "id": "test_main_bak",
-      "community": 3,
+      "community": 4,
       "norm_label": "bak()"
     },
     {
@@ -171,7 +171,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/test_configstore/test_main.cpp",
       "source_location": "L15",
       "id": "test_main_tmp",
-      "community": 3,
+      "community": 4,
       "norm_label": "tmp()"
     },
     {
@@ -180,7 +180,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/test_configstore/test_main.cpp",
       "source_location": "L26",
       "id": "test_main_test_write_rechaza_json_invalido",
-      "community": 3,
+      "community": 4,
       "norm_label": "test_write_rechaza_json_invalido()"
     },
     {
@@ -189,7 +189,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/test_configstore/test_main.cpp",
       "source_location": "L32",
       "id": "test_main_test_write_crea_archivo_y_sin_residuos",
-      "community": 3,
+      "community": 4,
       "norm_label": "test_write_crea_archivo_y_sin_residuos()"
     },
     {
@@ -198,7 +198,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/test_configstore/test_main.cpp",
       "source_location": "L39",
       "id": "test_main_test_write_respalda_el_valor_anterior_en_bak",
-      "community": 3,
+      "community": 4,
       "norm_label": "test_write_respalda_el_valor_anterior_en_bak()"
     },
     {
@@ -207,7 +207,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/test_configstore/test_main.cpp",
       "source_location": "L48",
       "id": "test_main_test_read_devuelve_principal_valido",
-      "community": 3,
+      "community": 4,
       "norm_label": "test_read_devuelve_principal_valido()"
     },
     {
@@ -216,7 +216,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/test_configstore/test_main.cpp",
       "source_location": "L53",
       "id": "test_main_test_read_inexistente_devuelve_vacio",
-      "community": 3,
+      "community": 4,
       "norm_label": "test_read_inexistente_devuelve_vacio()"
     },
     {
@@ -225,7 +225,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/test_configstore/test_main.cpp",
       "source_location": "L57",
       "id": "test_main_test_read_principal_corrupto_recupera_bak",
-      "community": 3,
+      "community": 4,
       "norm_label": "test_read_principal_corrupto_recupera_bak()"
     },
     {
@@ -234,7 +234,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/test_configstore/test_main.cpp",
       "source_location": "L65",
       "id": "test_main_test_read_principal_y_bak_corruptos_devuelve_vacio",
-      "community": 3,
+      "community": 4,
       "norm_label": "test_read_principal_y_bak_corruptos_devuelve_vacio()"
     },
     {
@@ -243,7 +243,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/test_configstore/test_main.cpp",
       "source_location": "L73",
       "id": "test_main_test_tmp_colgado_no_afecta_lectura",
-      "community": 3,
+      "community": 4,
       "norm_label": "test_tmp_colgado_no_afecta_lectura()"
     },
     {
@@ -261,7 +261,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/mock/Logger.h",
       "source_location": "L1",
       "id": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_test_mock_logger_h",
-      "community": 1,
+      "community": 8,
       "norm_label": "logger.h"
     },
     {
@@ -270,7 +270,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Logger.cpp",
       "source_location": "L264",
       "id": "logger_println",
-      "community": 1,
+      "community": 8,
       "norm_label": "println()"
     },
     {
@@ -324,7 +324,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/mock/FS.h",
       "source_location": "L1",
       "id": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_test_mock_fs_h",
-      "community": 3,
+      "community": 4,
       "norm_label": "fs.h"
     },
     {
@@ -333,7 +333,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/mock/FS.h",
       "source_location": "L18",
       "id": "fs_mockfile",
-      "community": 3,
+      "community": 4,
       "norm_label": "mockfile()"
     },
     {
@@ -342,7 +342,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/mock/FS.h",
       "source_location": "L36",
       "id": "fs_mockfs",
-      "community": 3,
+      "community": 4,
       "norm_label": "mockfs()"
     },
     {
@@ -351,7 +351,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/mock/FS.h",
       "source_location": "L40",
       "id": "fs_exists",
-      "community": 3,
+      "community": 4,
       "norm_label": "exists()"
     },
     {
@@ -360,7 +360,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/mock/FS.h",
       "source_location": "L42",
       "id": "fs_open",
-      "community": 3,
+      "community": 4,
       "norm_label": "open()"
     },
     {
@@ -369,7 +369,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/mock/FS.h",
       "source_location": "L49",
       "id": "fs_remove",
-      "community": 3,
+      "community": 4,
       "norm_label": "remove()"
     },
     {
@@ -378,7 +378,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/mock/FS.h",
       "source_location": "L51",
       "id": "fs_rename",
-      "community": 3,
+      "community": 4,
       "norm_label": "rename()"
     },
     {
@@ -387,7 +387,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/mock/FS.h",
       "source_location": "L60",
       "id": "fs_mockclear",
-      "community": 3,
+      "community": 4,
       "norm_label": "mockclear()"
     },
     {
@@ -396,7 +396,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/mock/FS.h",
       "source_location": "L61",
       "id": "fs_mockset",
-      "community": 3,
+      "community": 4,
       "norm_label": "mockset()"
     },
     {
@@ -405,7 +405,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/mock/FS.h",
       "source_location": "L62",
       "id": "fs_mockhas",
-      "community": 3,
+      "community": 4,
       "norm_label": "mockhas()"
     },
     {
@@ -414,7 +414,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/mock/FS.h",
       "source_location": "L74",
       "id": "fs_readstring",
-      "community": 3,
+      "community": 4,
       "norm_label": "readstring()"
     },
     {
@@ -423,7 +423,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/test/mock/FS.h",
       "source_location": "L78",
       "id": "fs_print",
-      "community": 3,
+      "community": 4,
       "norm_label": "print()"
     },
     {
@@ -972,7 +972,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Stage.cpp",
       "source_location": "L52",
       "id": "stage_error",
-      "community": 1,
+      "community": 8,
       "norm_label": "error()"
     },
     {
@@ -988,7 +988,7 @@
       "label": "ntp_sync_callback()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L95",
+      "source_location": "L98",
       "id": "thawing_room_chicano_ntp_sync_callback",
       "community": 1,
       "norm_label": "ntp_sync_callback()"
@@ -997,7 +997,7 @@
       "label": "printStackUsage()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L99",
+      "source_location": "L102",
       "id": "thawing_room_chicano_printstackusage",
       "community": 1,
       "norm_label": "printstackusage()"
@@ -1006,16 +1006,16 @@
       "label": "logResetReason()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L109",
+      "source_location": "L112",
       "id": "thawing_room_chicano_logresetreason",
-      "community": 1,
+      "community": 0,
       "norm_label": "logresetreason()"
     },
     {
       "label": "backgroundTasks()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L127",
+      "source_location": "L130",
       "id": "thawing_room_chicano_backgroundtasks",
       "community": 5,
       "norm_label": "backgroundtasks()"
@@ -1024,7 +1024,7 @@
       "label": "setup()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L155",
+      "source_location": "L158",
       "id": "thawing_room_chicano_setup",
       "community": 0,
       "norm_label": "setup()"
@@ -1033,34 +1033,34 @@
       "label": "setUpWatchdog()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L299",
+      "source_location": "L303",
       "id": "thawing_room_chicano_setupwatchdog",
-      "community": 1,
+      "community": 0,
       "norm_label": "setupwatchdog()"
     },
     {
       "label": "loop()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L315",
+      "source_location": "L319",
       "id": "thawing_room_chicano_loop",
-      "community": 5,
+      "community": 1,
       "norm_label": "loop()"
     },
     {
       "label": "handleInputs()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L362",
+      "source_location": "L367",
       "id": "thawing_room_chicano_handleinputs",
-      "community": 6,
+      "community": 1,
       "norm_label": "handleinputs()"
     },
     {
       "label": "handleStage()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L392",
+      "source_location": "L397",
       "id": "thawing_room_chicano_handlestage",
       "community": 1,
       "norm_label": "handlestage()"
@@ -1069,7 +1069,7 @@
       "label": "handleStage1()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L402",
+      "source_location": "L407",
       "id": "thawing_room_chicano_handlestage1",
       "community": 1,
       "norm_label": "handlestage1()"
@@ -1078,7 +1078,7 @@
       "label": "handleStage2()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L506",
+      "source_location": "L511",
       "id": "thawing_room_chicano_handlestage2",
       "community": 1,
       "norm_label": "handlestage2()"
@@ -1087,7 +1087,7 @@
       "label": "handleStage3()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L671",
+      "source_location": "L676",
       "id": "thawing_room_chicano_handlestage3",
       "community": 1,
       "norm_label": "handlestage3()"
@@ -1096,7 +1096,7 @@
       "label": "idle()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L753",
+      "source_location": "L758",
       "id": "thawing_room_chicano_idle",
       "community": 1,
       "norm_label": "idle()"
@@ -1105,34 +1105,34 @@
       "label": "handleMqttMessage()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L758",
+      "source_location": "L763",
       "id": "thawing_room_chicano_handlemqttmessage",
-      "community": 4,
+      "community": 7,
       "norm_label": "handlemqttmessage()"
     },
     {
       "label": "readParam()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1106",
+      "source_location": "L1111",
       "id": "thawing_room_chicano_readparam",
-      "community": 4,
+      "community": 7,
       "norm_label": "readparam()"
     },
     {
       "label": "callback()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1115",
+      "source_location": "L1120",
       "id": "thawing_room_chicano_callback",
-      "community": 4,
+      "community": 7,
       "norm_label": "callback()"
     },
     {
       "label": "watchBrokerLink()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1140",
+      "source_location": "L1145",
       "id": "thawing_room_chicano_watchbrokerlink",
       "community": 5,
       "norm_label": "watchbrokerlink()"
@@ -1141,7 +1141,7 @@
       "label": "serviceRemoteControl()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1168",
+      "source_location": "L1173",
       "id": "thawing_room_chicano_serviceremotecontrol",
       "community": 6,
       "norm_label": "serviceremotecontrol()"
@@ -1150,16 +1150,16 @@
       "label": "logBootEvents()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1269",
+      "source_location": "L1275",
       "id": "thawing_room_chicano_logbootevents",
-      "community": 6,
+      "community": 3,
       "norm_label": "logbootevents()"
     },
     {
       "label": "stopRoutine()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1296",
+      "source_location": "L1302",
       "id": "thawing_room_chicano_stoproutine",
       "community": 1,
       "norm_label": "stoproutine()"
@@ -1168,25 +1168,25 @@
       "label": "classifyFault()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1337",
+      "source_location": "L1343",
       "id": "thawing_room_chicano_classifyfault",
-      "community": 4,
+      "community": 6,
       "norm_label": "classifyfault()"
     },
     {
       "label": "sendSensorFault()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1348",
+      "source_location": "L1354",
       "id": "thawing_room_chicano_sendsensorfault",
-      "community": 4,
+      "community": 6,
       "norm_label": "sendsensorfault()"
     },
     {
       "label": "publishAdcDiagnostics()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1374",
+      "source_location": "L1380",
       "id": "thawing_room_chicano_publishadcdiagnostics",
       "community": 1,
       "norm_label": "publishadcdiagnostics()"
@@ -1195,52 +1195,52 @@
       "label": "updateSensorReading()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1397",
+      "source_location": "L1403",
       "id": "thawing_room_chicano_updatesensorreading",
-      "community": 4,
+      "community": 6,
       "norm_label": "updatesensorreading()"
     },
     {
       "label": "updateTemperature()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1430",
+      "source_location": "L1436",
       "id": "thawing_room_chicano_updatetemperature",
-      "community": 4,
+      "community": 6,
       "norm_label": "updatetemperature()"
     },
     {
       "label": "setStage()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1446",
+      "source_location": "L1452",
       "id": "thawing_room_chicano_setstage",
-      "community": 6,
+      "community": 1,
       "norm_label": "setstage()"
     },
     {
       "label": "showStageLeds()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1486",
+      "source_location": "L1492",
       "id": "thawing_room_chicano_showstageleds",
-      "community": 6,
+      "community": 1,
       "norm_label": "showstageleds()"
     },
     {
       "label": "serviceCalibration()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1500",
+      "source_location": "L1506",
       "id": "thawing_room_chicano_servicecalibration",
-      "community": 4,
+      "community": 3,
       "norm_label": "servicecalibration()"
     },
     {
       "label": "loadMaintenanceLock()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1522",
+      "source_location": "L1528",
       "id": "thawing_room_chicano_loadmaintenancelock",
       "community": 0,
       "norm_label": "loadmaintenancelock()"
@@ -1249,25 +1249,34 @@
       "label": "setMaintenanceLock()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1538",
+      "source_location": "L1544",
       "id": "thawing_room_chicano_setmaintenancelock",
-      "community": 6,
+      "community": 3,
       "norm_label": "setmaintenancelock()"
+    },
+    {
+      "label": "serviceFanOverride()",
+      "file_type": "code",
+      "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
+      "source_location": "L1581",
+      "id": "thawing_room_chicano_servicefanoverride",
+      "community": 1,
+      "norm_label": "servicefanoverride()"
     },
     {
       "label": "serviceMaintenanceLeds()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1572",
+      "source_location": "L1612",
       "id": "thawing_room_chicano_servicemaintenanceleds",
-      "community": 5,
+      "community": 1,
       "norm_label": "servicemaintenanceleds()"
     },
     {
       "label": "hasIntervalPassed()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1584",
+      "source_location": "L1624",
       "id": "thawing_room_chicano_hasintervalpassed",
       "community": 1,
       "norm_label": "hasintervalpassed()"
@@ -1276,7 +1285,7 @@
       "label": "publishStateChange()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1604",
+      "source_location": "L1644",
       "id": "thawing_room_chicano_publishstatechange",
       "community": 1,
       "norm_label": "publishstatechange()"
@@ -1285,16 +1294,16 @@
       "label": "getTempAvg()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1609",
+      "source_location": "L1649",
       "id": "thawing_room_chicano_gettempavg",
-      "community": 4,
+      "community": 6,
       "norm_label": "gettempavg()"
     },
     {
       "label": "publishPID()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1621",
+      "source_location": "L1661",
       "id": "thawing_room_chicano_publishpid",
       "community": 1,
       "norm_label": "publishpid()"
@@ -1303,16 +1312,16 @@
       "label": "publishTemperatures()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1633",
+      "source_location": "L1673",
       "id": "thawing_room_chicano_publishtemperatures",
-      "community": 4,
+      "community": 6,
       "norm_label": "publishtemperatures()"
     },
     {
       "label": "initStage1()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1672",
+      "source_location": "L1712",
       "id": "thawing_room_chicano_initstage1",
       "community": 1,
       "norm_label": "initstage1()"
@@ -1321,7 +1330,7 @@
       "label": "initStage2()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1687",
+      "source_location": "L1727",
       "id": "thawing_room_chicano_initstage2",
       "community": 1,
       "norm_label": "initstage2()"
@@ -1330,7 +1339,7 @@
       "label": "initStage3()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1695",
+      "source_location": "L1735",
       "id": "thawing_room_chicano_initstage3",
       "community": 1,
       "norm_label": "initstage3()"
@@ -1339,7 +1348,7 @@
       "label": "destroyStage1()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1703",
+      "source_location": "L1743",
       "id": "thawing_room_chicano_destroystage1",
       "community": 1,
       "norm_label": "destroystage1()"
@@ -1348,7 +1357,7 @@
       "label": "destroyStage2()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1710",
+      "source_location": "L1750",
       "id": "thawing_room_chicano_destroystage2",
       "community": 1,
       "norm_label": "destroystage2()"
@@ -1357,7 +1366,7 @@
       "label": "destroyStage3()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1722",
+      "source_location": "L1762",
       "id": "thawing_room_chicano_destroystage3",
       "community": 1,
       "norm_label": "destroystage3()"
@@ -1366,7 +1375,7 @@
       "label": "onMQTTConnect()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1731",
+      "source_location": "L1771",
       "id": "thawing_room_chicano_onmqttconnect",
       "community": 1,
       "norm_label": "onmqttconnect()"
@@ -1375,7 +1384,7 @@
       "label": "asyncLoopSprinkler()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1745",
+      "source_location": "L1786",
       "id": "thawing_room_chicano_asyncloopsprinkler",
       "community": 1,
       "norm_label": "asyncloopsprinkler()"
@@ -1384,7 +1393,7 @@
       "label": "aknowledgementRoutine()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1769",
+      "source_location": "L1810",
       "id": "thawing_room_chicano_aknowledgementroutine",
       "community": 1,
       "norm_label": "aknowledgementroutine()"
@@ -1393,7 +1402,7 @@
       "label": "turn_on_flush_routine()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1799",
+      "source_location": "L1841",
       "id": "thawing_room_chicano_turn_on_flush_routine",
       "community": 1,
       "norm_label": "turn_on_flush_routine()"
@@ -1402,7 +1411,7 @@
       "label": "turn_off_flush_routine()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1804",
+      "source_location": "L1846",
       "id": "thawing_room_chicano_turn_off_flush_routine",
       "community": 1,
       "norm_label": "turn_off_flush_routine()"
@@ -1420,7 +1429,7 @@
       "label": "MqttClient()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/MqttClient.h",
-      "source_location": "L119",
+      "source_location": "L120",
       "id": "mqttclient_mqttclient",
       "community": 13,
       "norm_label": "mqttclient()"
@@ -1449,7 +1458,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/MqttClient.cpp",
       "source_location": "L1",
       "id": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_mqttclient_cpp",
-      "community": 10,
+      "community": 7,
       "norm_label": "mqttclient.cpp"
     },
     {
@@ -1458,7 +1467,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/MqttClient.cpp",
       "source_location": "L20",
       "id": "mqttclient_settopicprefix",
-      "community": 10,
+      "community": 7,
       "norm_label": "settopicprefix()"
     },
     {
@@ -1467,7 +1476,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/MqttClient.cpp",
       "source_location": "L38",
       "id": "mqttclient_fulltopic",
-      "community": 10,
+      "community": 7,
       "norm_label": "fulltopic()"
     },
     {
@@ -1476,7 +1485,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/MqttClient.cpp",
       "source_location": "L43",
       "id": "mqttclient_settls",
-      "community": 3,
+      "community": 4,
       "norm_label": "settls()"
     },
     {
@@ -1485,7 +1494,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/MqttClient.cpp",
       "source_location": "L76",
       "id": "mqttclient_istls",
-      "community": 10,
+      "community": 7,
       "norm_label": "istls()"
     },
     {
@@ -1494,7 +1503,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/MqttClient.cpp",
       "source_location": "L80",
       "id": "mqttclient_connect",
-      "community": 10,
+      "community": 7,
       "norm_label": "connect()"
     },
     {
@@ -1503,7 +1512,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/MqttClient.cpp",
       "source_location": "L107",
       "id": "mqttclient_isserviceavailable",
-      "community": 10,
+      "community": 7,
       "norm_label": "isserviceavailable()"
     },
     {
@@ -1512,7 +1521,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/MqttClient.cpp",
       "source_location": "L111",
       "id": "mqttclient_reconnect",
-      "community": 10,
+      "community": 7,
       "norm_label": "reconnect()"
     },
     {
@@ -1521,7 +1530,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/MqttClient.cpp",
       "source_location": "L145",
       "id": "mqttclient_onconnect",
-      "community": 10,
+      "community": 0,
       "norm_label": "onconnect()"
     },
     {
@@ -1530,7 +1539,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/MqttClient.cpp",
       "source_location": "L151",
       "id": "mqttclient_istopicequal",
-      "community": 10,
+      "community": 7,
       "norm_label": "istopicequal()"
     },
     {
@@ -1539,7 +1548,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/MqttClient.cpp",
       "source_location": "L156",
       "id": "mqttclient_isconnected",
-      "community": 10,
+      "community": 7,
       "norm_label": "isconnected()"
     },
     {
@@ -1548,7 +1557,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/MqttClient.cpp",
       "source_location": "L160",
       "id": "mqttclient_loop",
-      "community": 10,
+      "community": 7,
       "norm_label": "loop()"
     },
     {
@@ -1557,7 +1566,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/MqttClient.cpp",
       "source_location": "L169",
       "id": "mqttclient_setcallback",
-      "community": 10,
+      "community": 0,
       "norm_label": "setcallback()"
     },
     {
@@ -1566,7 +1575,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/MqttClient.cpp",
       "source_location": "L173",
       "id": "mqttclient_subscriberoutine",
-      "community": 10,
+      "community": 7,
       "norm_label": "subscriberoutine()"
     },
     {
@@ -1575,7 +1584,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/MqttClient.cpp",
       "source_location": "L184",
       "id": "mqttclient_publishdata",
-      "community": 6,
+      "community": 1,
       "norm_label": "publishdata()"
     },
     {
@@ -1584,7 +1593,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/MqttClient.cpp",
       "source_location": "L198",
       "id": "mqttclient_refreshmqttstatus",
-      "community": 10,
+      "community": 7,
       "norm_label": "refreshmqttstatus()"
     },
     {
@@ -1593,7 +1602,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/MqttClient.cpp",
       "source_location": "L207",
       "id": "mqttclient_getconnectionstatus",
-      "community": 10,
+      "community": 7,
       "norm_label": "getconnectionstatus()"
     },
     {
@@ -1602,7 +1611,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/MqttClient.cpp",
       "source_location": "L211",
       "id": "mqttclient_responsetofloat",
-      "community": 4,
+      "community": 7,
       "norm_label": "responsetofloat()"
     },
     {
@@ -1611,7 +1620,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/MqttClient.cpp",
       "source_location": "L217",
       "id": "mqttclient_responsetoint",
-      "community": 4,
+      "community": 7,
       "norm_label": "responsetoint()"
     },
     {
@@ -1620,7 +1629,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/MqttClient.cpp",
       "source_location": "L223",
       "id": "mqttclient_debug",
-      "community": 10,
+      "community": 7,
       "norm_label": "debug()"
     },
     {
@@ -1629,7 +1638,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/MqttClient.cpp",
       "source_location": "L227",
       "id": "mqttclient_error",
-      "community": 1,
+      "community": 7,
       "norm_label": "error()"
     },
     {
@@ -1683,7 +1692,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Calibration.cpp",
       "source_location": "L1",
       "id": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_hardware_calibration_cpp",
-      "community": 7,
+      "community": 3,
       "norm_label": "calibration.cpp"
     },
     {
@@ -1692,7 +1701,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Calibration.cpp",
       "source_location": "L17",
       "id": "calibration_channelkey",
-      "community": 5,
+      "community": 3,
       "norm_label": "channelkey()"
     },
     {
@@ -1701,7 +1710,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Calibration.cpp",
       "source_location": "L18",
       "id": "calibration_channelname",
-      "community": 7,
+      "community": 3,
       "norm_label": "channelname()"
     },
     {
@@ -1710,7 +1719,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Calibration.cpp",
       "source_location": "L20",
       "id": "calibration_factoryslope",
-      "community": 7,
+      "community": 3,
       "norm_label": "factoryslope()"
     },
     {
@@ -1719,7 +1728,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Calibration.cpp",
       "source_location": "L23",
       "id": "calibration_factoryoffset",
-      "community": 7,
+      "community": 3,
       "norm_label": "factoryoffset()"
     },
     {
@@ -1728,7 +1737,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Calibration.cpp",
       "source_location": "L28",
       "id": "calibration_parsecal",
-      "community": 7,
+      "community": 3,
       "norm_label": "parsecal()"
     },
     {
@@ -1737,7 +1746,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Calibration.cpp",
       "source_location": "L43",
       "id": "calibration_putcal",
-      "community": 7,
+      "community": 3,
       "norm_label": "putcal()"
     },
     {
@@ -1746,7 +1755,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Calibration.cpp",
       "source_location": "L54",
       "id": "calibration_begin",
-      "community": 7,
+      "community": 3,
       "norm_label": "begin()"
     },
     {
@@ -1755,7 +1764,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Calibration.cpp",
       "source_location": "L85",
       "id": "calibration_sample",
-      "community": 4,
+      "community": 3,
       "norm_label": "sample()"
     },
     {
@@ -1764,7 +1773,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Calibration.cpp",
       "source_location": "L95",
       "id": "calibration_setcontext",
-      "community": 4,
+      "community": 3,
       "norm_label": "setcontext()"
     },
     {
@@ -1773,7 +1782,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Calibration.cpp",
       "source_location": "L108",
       "id": "calibration_service",
-      "community": 4,
+      "community": 3,
       "norm_label": "service()"
     },
     {
@@ -1782,7 +1791,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Calibration.cpp",
       "source_location": "L122",
       "id": "calibration_post",
-      "community": 7,
+      "community": 3,
       "norm_label": "post()"
     },
     {
@@ -1791,7 +1800,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Calibration.cpp",
       "source_location": "L129",
       "id": "calibration_save",
-      "community": 7,
+      "community": 3,
       "norm_label": "save()"
     },
     {
@@ -1800,7 +1809,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Calibration.cpp",
       "source_location": "L145",
       "id": "calibration_request",
-      "community": 7,
+      "community": 3,
       "norm_label": "request()"
     },
     {
@@ -1809,7 +1818,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Calibration.cpp",
       "source_location": "L229",
       "id": "calibration_printcal",
-      "community": 7,
+      "community": 3,
       "norm_label": "printcal()"
     },
     {
@@ -1818,7 +1827,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Calibration.cpp",
       "source_location": "L235",
       "id": "calibration_writejson",
-      "community": 7,
+      "community": 3,
       "norm_label": "writejson()"
     },
     {
@@ -1872,7 +1881,7 @@
       "source_file": "src/hardware/SensorBuffer.h",
       "source_location": "L1",
       "id": "src_hardware_sensorbuffer_h",
-      "community": 4,
+      "community": 6,
       "norm_label": "sensorbuffer.h"
     },
     {
@@ -1881,7 +1890,7 @@
       "source_file": "src/hardware/SensorBuffer.h",
       "source_location": "L3",
       "id": "sensorbuffer_sensorbuffer",
-      "community": 4,
+      "community": 6,
       "norm_label": "sensorbuffer()"
     },
     {
@@ -1890,7 +1899,7 @@
       "source_file": "src/hardware/SensorBuffer.h",
       "source_location": "L27",
       "id": "sensorbuffer_addvalue",
-      "community": 4,
+      "community": 6,
       "norm_label": "addvalue()"
     },
     {
@@ -1899,7 +1908,7 @@
       "source_file": "src/hardware/SensorBuffer.h",
       "source_location": "L40",
       "id": "sensorbuffer_getaverage",
-      "community": 4,
+      "community": 6,
       "norm_label": "getaverage()"
     },
     {
@@ -2151,7 +2160,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Controller.cpp",
       "source_location": "L236",
       "id": "controller_istscontactless",
-      "community": 4,
+      "community": 7,
       "norm_label": "istscontactless()"
     },
     {
@@ -2160,7 +2169,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Controller.cpp",
       "source_location": "L240",
       "id": "controller_hasirsensor",
-      "community": 4,
+      "community": 6,
       "norm_label": "hasirsensor()"
     },
     {
@@ -2169,7 +2178,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Controller.cpp",
       "source_location": "L247",
       "id": "controller_settscontactless",
-      "community": 4,
+      "community": 7,
       "norm_label": "settscontactless()"
     },
     {
@@ -2178,7 +2187,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Controller.cpp",
       "source_location": "L253",
       "id": "controller_isloratc",
-      "community": 4,
+      "community": 7,
       "norm_label": "isloratc()"
     },
     {
@@ -2187,7 +2196,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Controller.cpp",
       "source_location": "L257",
       "id": "controller_setloratc",
-      "community": 4,
+      "community": 7,
       "norm_label": "setloratc()"
     },
     {
@@ -2196,7 +2205,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Controller.cpp",
       "source_location": "L262",
       "id": "controller_isrtcconnected",
-      "community": 6,
+      "community": 3,
       "norm_label": "isrtcconnected()"
     },
     {
@@ -2277,7 +2286,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Controller.cpp",
       "source_location": "L368",
       "id": "controller_rawtotemp",
-      "community": 4,
+      "community": 9,
       "norm_label": "rawtotemp()"
     },
     {
@@ -2286,7 +2295,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Controller.cpp",
       "source_location": "L379",
       "id": "controller_getadcmedian",
-      "community": 4,
+      "community": 6,
       "norm_label": "getadcmedian()"
     },
     {
@@ -2295,7 +2304,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Controller.cpp",
       "source_location": "L395",
       "id": "controller_findadcmedian",
-      "community": 4,
+      "community": 6,
       "norm_label": "findadcmedian()"
     },
     {
@@ -2304,7 +2313,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Controller.cpp",
       "source_location": "L402",
       "id": "controller_getadcdiag",
-      "community": 4,
+      "community": 6,
       "norm_label": "getadcdiag()"
     },
     {
@@ -2313,7 +2322,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Controller.cpp",
       "source_location": "L419",
       "id": "controller_medianof",
-      "community": 4,
+      "community": 6,
       "norm_label": "medianof()"
     },
     {
@@ -2322,7 +2331,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Controller.cpp",
       "source_location": "L448",
       "id": "controller_readtempfrom",
-      "community": 4,
+      "community": 6,
       "norm_label": "readtempfrom()"
     },
     {
@@ -2340,7 +2349,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Controller.cpp",
       "source_location": "L486",
       "id": "controller_startconfigportal",
-      "community": 5,
+      "community": 0,
       "norm_label": "startconfigportal()"
     },
     {
@@ -2367,7 +2376,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Controller.cpp",
       "source_location": "L498",
       "id": "controller_reconnectwifi",
-      "community": 0,
+      "community": 5,
       "norm_label": "reconnectwifi()"
     },
     {
@@ -2403,7 +2412,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Controller.cpp",
       "source_location": "L514",
       "id": "controller_jsonbuilder",
-      "community": 4,
+      "community": 6,
       "norm_label": "jsonbuilder()"
     },
     {
@@ -2430,7 +2439,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Controller.cpp",
       "source_location": "L539",
       "id": "controller_updatedefaultparameters",
-      "community": 4,
+      "community": 7,
       "norm_label": "updatedefaultparameters()"
     },
     {
@@ -2448,7 +2457,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Controller.cpp",
       "source_location": "L650",
       "id": "controller_setupdefaultparameters",
-      "community": 3,
+      "community": 4,
       "norm_label": "setupdefaultparameters()"
     },
     {
@@ -2682,7 +2691,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/EventLog.cpp",
       "source_location": "L1",
       "id": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_hardware_eventlog_cpp",
-      "community": 6,
+      "community": 3,
       "norm_label": "eventlog.cpp"
     },
     {
@@ -2691,7 +2700,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/EventLog.cpp",
       "source_location": "L13",
       "id": "eventlog_typename",
-      "community": 6,
+      "community": 3,
       "norm_label": "typename()"
     },
     {
@@ -2700,7 +2709,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/EventLog.cpp",
       "source_location": "L14",
       "id": "eventlog_sourcename",
-      "community": 6,
+      "community": 3,
       "norm_label": "sourcename()"
     },
     {
@@ -2727,7 +2736,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/EventLog.cpp",
       "source_location": "L53",
       "id": "eventlog_enqueue",
-      "community": 6,
+      "community": 3,
       "norm_label": "enqueue()"
     },
     {
@@ -2736,7 +2745,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/EventLog.cpp",
       "source_location": "L72",
       "id": "eventlog_emit",
-      "community": 6,
+      "community": 3,
       "norm_label": "emit()"
     },
     {
@@ -2745,7 +2754,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/EventLog.cpp",
       "source_location": "L79",
       "id": "eventlog_cyclestart",
-      "community": 6,
+      "community": 3,
       "norm_label": "cyclestart()"
     },
     {
@@ -2754,7 +2763,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/EventLog.cpp",
       "source_location": "L88",
       "id": "eventlog_cycleend",
-      "community": 6,
+      "community": 3,
       "norm_label": "cycleend()"
     },
     {
@@ -2763,7 +2772,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/EventLog.cpp",
       "source_location": "L96",
       "id": "eventlog_cycleresume",
-      "community": 6,
+      "community": 3,
       "norm_label": "cycleresume()"
     },
     {
@@ -2772,7 +2781,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/EventLog.cpp",
       "source_location": "L107",
       "id": "eventlog_drain",
-      "community": 6,
+      "community": 3,
       "norm_label": "drain()"
     },
     {
@@ -2781,7 +2790,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/EventLog.cpp",
       "source_location": "L147",
       "id": "eventlog_writering",
-      "community": 3,
+      "community": 4,
       "norm_label": "writering()"
     },
     {
@@ -2790,7 +2799,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/EventLog.cpp",
       "source_location": "L173",
       "id": "eventlog_formatstamp",
-      "community": 6,
+      "community": 3,
       "norm_label": "formatstamp()"
     },
     {
@@ -2799,7 +2808,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/EventLog.cpp",
       "source_location": "L184",
       "id": "eventlog_appendsd",
-      "community": 6,
+      "community": 3,
       "norm_label": "appendsd()"
     },
     {
@@ -2808,7 +2817,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/EventLog.cpp",
       "source_location": "L207",
       "id": "eventlog_writeescaped",
-      "community": 6,
+      "community": 3,
       "norm_label": "writeescaped()"
     },
     {
@@ -2817,7 +2826,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/EventLog.cpp",
       "source_location": "L216",
       "id": "eventlog_writejson",
-      "community": 6,
+      "community": 3,
       "norm_label": "writejson()"
     },
     {
@@ -2853,7 +2862,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Logger.cpp",
       "source_location": "L23",
       "id": "logger_setclock",
-      "community": 5,
+      "community": 1,
       "norm_label": "setclock()"
     },
     {
@@ -2862,7 +2871,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Logger.cpp",
       "source_location": "L33",
       "id": "logger_epochat",
-      "community": 6,
+      "community": 3,
       "norm_label": "epochat()"
     },
     {
@@ -2907,7 +2916,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Logger.cpp",
       "source_location": "L142",
       "id": "logger_rotateifneeded",
-      "community": 3,
+      "community": 4,
       "norm_label": "rotateifneeded()"
     },
     {
@@ -2952,7 +2961,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Logger.cpp",
       "source_location": "L207",
       "id": "logger_writesd",
-      "community": 3,
+      "community": 8,
       "norm_label": "writesd()"
     },
     {
@@ -2970,7 +2979,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Logger.cpp",
       "source_location": "L255",
       "id": "logger_print",
-      "community": 1,
+      "community": 3,
       "norm_label": "print()"
     },
     {
@@ -3024,7 +3033,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Logger.cpp",
       "source_location": "L328",
       "id": "logger_hassd",
-      "community": 6,
+      "community": 3,
       "norm_label": "hassd()"
     },
     {
@@ -3042,7 +3051,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/Logger.cpp",
       "source_location": "L346",
       "id": "logger_getsdinfo",
-      "community": 2,
+      "community": 8,
       "norm_label": "getsdinfo()"
     },
     {
@@ -3058,7 +3067,7 @@
       "label": "RemoteControl()",
       "file_type": "code",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/RemoteControl.h",
-      "source_location": "L65",
+      "source_location": "L66",
       "id": "remotecontrol_remotecontrol",
       "community": 18,
       "norm_label": "remotecontrol()"
@@ -3222,7 +3231,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/WIFI.cpp",
       "source_location": "L691",
       "id": "wifi_connecttowifi",
-      "community": 0,
+      "community": 5,
       "norm_label": "connecttowifi()"
     },
     {
@@ -3258,7 +3267,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/WIFI.cpp",
       "source_location": "L775",
       "id": "wifi_setupota",
-      "community": 0,
+      "community": 5,
       "norm_label": "setupota()"
     },
     {
@@ -3303,7 +3312,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/WIFI.cpp",
       "source_location": "L820",
       "id": "wifi_reconnect",
-      "community": 0,
+      "community": 5,
       "norm_label": "reconnect()"
     },
     {
@@ -3339,7 +3348,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/CalibrationMath.cpp",
       "source_location": "L1",
       "id": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_hardware_calibrationmath_cpp",
-      "community": 7,
+      "community": 9,
       "norm_label": "calibrationmath.cpp"
     },
     {
@@ -3348,7 +3357,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/CalibrationMath.cpp",
       "source_location": "L4",
       "id": "calibrationmath_segment",
-      "community": 7,
+      "community": 9,
       "norm_label": "segment()"
     },
     {
@@ -3357,7 +3366,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/CalibrationMath.cpp",
       "source_location": "L9",
       "id": "calibrationmath_calvalidate",
-      "community": 7,
+      "community": 9,
       "norm_label": "calvalidate()"
     },
     {
@@ -3366,7 +3375,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/CalibrationMath.cpp",
       "source_location": "L42",
       "id": "calibrationmath_calapply",
-      "community": 7,
+      "community": 9,
       "norm_label": "calapply()"
     },
     {
@@ -3375,7 +3384,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/ConfigStore.cpp",
       "source_location": "L1",
       "id": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_hardware_configstore_cpp",
-      "community": 3,
+      "community": 4,
       "norm_label": "configstore.cpp"
     },
     {
@@ -3402,7 +3411,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/ConfigStore.cpp",
       "source_location": "L35",
       "id": "configstore_isvalidjson",
-      "community": 3,
+      "community": 4,
       "norm_label": "isvalidjson()"
     },
     {
@@ -3411,7 +3420,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/ConfigStore.cpp",
       "source_location": "L41",
       "id": "configstore_readraw",
-      "community": 3,
+      "community": 4,
       "norm_label": "readraw()"
     },
     {
@@ -3420,7 +3429,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/ConfigStore.cpp",
       "source_location": "L50",
       "id": "configstore_exists",
-      "community": 3,
+      "community": 4,
       "norm_label": "exists()"
     },
     {
@@ -3429,7 +3438,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/ConfigStore.cpp",
       "source_location": "L56",
       "id": "configstore_read",
-      "community": 3,
+      "community": 4,
       "norm_label": "read()"
     },
     {
@@ -3438,7 +3447,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/ConfigStore.cpp",
       "source_location": "L76",
       "id": "configstore_write",
-      "community": 3,
+      "community": 4,
       "norm_label": "write()"
     },
     {
@@ -3447,7 +3456,7 @@
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/ConfigStore.cpp",
       "source_location": "L127",
       "id": "configstore_migratefromsd",
-      "community": 3,
+      "community": 4,
       "norm_label": "migratefromsd()"
     },
     {
@@ -3477,7 +3486,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 9,
+      "community": 10,
       "norm_label": "thawing room controller",
       "id": "readme_thawing_room_controller"
     },
@@ -3490,7 +3499,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 9,
+      "community": 10,
       "norm_label": "esp32-s3 (heltec wifi lora 32 v3)",
       "id": "readme_esp32_s3_heltec"
     },
@@ -3503,7 +3512,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 9,
+      "community": 10,
       "norm_label": "ds3231 rtc",
       "id": "readme_ds3231_rtc"
     },
@@ -3516,7 +3525,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 9,
+      "community": 10,
       "norm_label": "watchdog timer (5 min timeout)",
       "id": "readme_watchdog_timer"
     },
@@ -3529,7 +3538,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 9,
+      "community": 10,
       "norm_label": "rtc architecture - time source hierarchy",
       "id": "readme_rtc_architecture"
     },
@@ -3542,7 +3551,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 9,
+      "community": 10,
       "norm_label": "ntp synchronization",
       "id": "readme_ntp_synchronization"
     },
@@ -3555,7 +3564,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 9,
+      "community": 10,
       "norm_label": "i2c bus recovery",
       "id": "readme_i2c_bus_recovery"
     },
@@ -3568,7 +3577,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 9,
+      "community": 10,
       "norm_label": "stage scheduling",
       "id": "readme_stage_scheduling"
     },
@@ -3581,7 +3590,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 9,
+      "community": 10,
       "norm_label": "web interface with espasyncwebserver",
       "id": "readme_web_interface"
     },
@@ -3594,7 +3603,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 9,
+      "community": 10,
       "norm_label": "task scheduler",
       "id": "readme_task_scheduler"
     },
@@ -3607,7 +3616,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 9,
+      "community": 10,
       "norm_label": "non-blocking stage init",
       "id": "readme_non_blocking_stage_init"
     },
@@ -3619,7 +3628,7 @@
       "source_url": null,
       "captured_at": null,
       "contributor": null,
-      "community": 9,
+      "community": 10,
       "norm_label": "safe actuator state on boot",
       "id": "readme_safe_actuator_state"
     },
@@ -3632,7 +3641,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 9,
+      "community": 10,
       "norm_label": "sd library integration",
       "id": "sd_readme_library"
     },
@@ -3645,7 +3654,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 9,
+      "community": 10,
       "norm_label": "asynctcp library",
       "id": "asynctcp_library"
     },
@@ -3658,7 +3667,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 9,
+      "community": 10,
       "norm_label": "espasynctcp library",
       "id": "espasync_tcp_library"
     },
@@ -3671,7 +3680,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 9,
+      "community": 10,
       "norm_label": "espasyncwebserver",
       "id": "external_repo_library"
     },
@@ -3684,7 +3693,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 9,
+      "community": 10,
       "norm_label": "webseriallite",
       "id": "webserial_lite_library"
     },
@@ -3697,7 +3706,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 9,
+      "community": 10,
       "norm_label": "webseriallite frontend ui",
       "id": "webserial_frontend"
     }
@@ -7271,7 +7280,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L95",
+      "source_location": "L98",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_ntp_sync_callback",
@@ -7283,7 +7292,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L99",
+      "source_location": "L102",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_printstackusage",
@@ -7295,7 +7304,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L109",
+      "source_location": "L112",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_logresetreason",
@@ -7307,7 +7316,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L127",
+      "source_location": "L130",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_backgroundtasks",
@@ -7319,7 +7328,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L155",
+      "source_location": "L158",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_setup",
@@ -7331,7 +7340,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L299",
+      "source_location": "L303",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_setupwatchdog",
@@ -7343,7 +7352,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L315",
+      "source_location": "L319",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_loop",
@@ -7355,7 +7364,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L362",
+      "source_location": "L367",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_handleinputs",
@@ -7367,7 +7376,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L392",
+      "source_location": "L397",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_handlestage",
@@ -7379,7 +7388,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L402",
+      "source_location": "L407",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_handlestage1",
@@ -7391,7 +7400,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L506",
+      "source_location": "L511",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_handlestage2",
@@ -7403,7 +7412,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L671",
+      "source_location": "L676",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_handlestage3",
@@ -7415,7 +7424,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L753",
+      "source_location": "L758",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_idle",
@@ -7427,7 +7436,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L758",
+      "source_location": "L763",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_handlemqttmessage",
@@ -7439,7 +7448,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1106",
+      "source_location": "L1111",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_readparam",
@@ -7451,7 +7460,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1115",
+      "source_location": "L1120",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_callback",
@@ -7463,7 +7472,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1140",
+      "source_location": "L1145",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_watchbrokerlink",
@@ -7475,7 +7484,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1168",
+      "source_location": "L1173",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_serviceremotecontrol",
@@ -7487,7 +7496,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1269",
+      "source_location": "L1275",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_logbootevents",
@@ -7499,7 +7508,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1296",
+      "source_location": "L1302",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_stoproutine",
@@ -7511,7 +7520,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1337",
+      "source_location": "L1343",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_classifyfault",
@@ -7523,7 +7532,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1348",
+      "source_location": "L1354",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_sendsensorfault",
@@ -7535,7 +7544,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1374",
+      "source_location": "L1380",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_publishadcdiagnostics",
@@ -7547,7 +7556,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1397",
+      "source_location": "L1403",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_updatesensorreading",
@@ -7559,7 +7568,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1430",
+      "source_location": "L1436",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_updatetemperature",
@@ -7571,7 +7580,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1446",
+      "source_location": "L1452",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_setstage",
@@ -7583,7 +7592,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1486",
+      "source_location": "L1492",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_showstageleds",
@@ -7595,7 +7604,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1500",
+      "source_location": "L1506",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_servicecalibration",
@@ -7607,7 +7616,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1522",
+      "source_location": "L1528",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_loadmaintenancelock",
@@ -7619,7 +7628,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1538",
+      "source_location": "L1544",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_setmaintenancelock",
@@ -7631,7 +7640,19 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1572",
+      "source_location": "L1581",
+      "weight": 1.0,
+      "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
+      "_tgt": "thawing_room_chicano_servicefanoverride",
+      "source": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
+      "target": "thawing_room_chicano_servicefanoverride",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
+      "source_location": "L1612",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_servicemaintenanceleds",
@@ -7643,7 +7664,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1584",
+      "source_location": "L1624",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_hasintervalpassed",
@@ -7655,7 +7676,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1604",
+      "source_location": "L1644",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_publishstatechange",
@@ -7667,7 +7688,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1609",
+      "source_location": "L1649",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_gettempavg",
@@ -7679,7 +7700,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1621",
+      "source_location": "L1661",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_publishpid",
@@ -7691,7 +7712,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1633",
+      "source_location": "L1673",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_publishtemperatures",
@@ -7703,7 +7724,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1672",
+      "source_location": "L1712",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_initstage1",
@@ -7715,7 +7736,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1687",
+      "source_location": "L1727",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_initstage2",
@@ -7727,7 +7748,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1695",
+      "source_location": "L1735",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_initstage3",
@@ -7739,7 +7760,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1703",
+      "source_location": "L1743",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_destroystage1",
@@ -7751,7 +7772,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1710",
+      "source_location": "L1750",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_destroystage2",
@@ -7763,7 +7784,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1722",
+      "source_location": "L1762",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_destroystage3",
@@ -7775,7 +7796,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1731",
+      "source_location": "L1771",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_onmqttconnect",
@@ -7787,7 +7808,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1745",
+      "source_location": "L1786",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_asyncloopsprinkler",
@@ -7799,7 +7820,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1769",
+      "source_location": "L1810",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_aknowledgementroutine",
@@ -7811,7 +7832,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1799",
+      "source_location": "L1841",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_turn_on_flush_routine",
@@ -7823,7 +7844,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1804",
+      "source_location": "L1846",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_thawing_room_chicano_cpp",
       "_tgt": "thawing_room_chicano_turn_off_flush_routine",
@@ -7847,7 +7868,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L267",
+      "source_location": "L271",
       "weight": 1.0,
       "_src": "thawing_room_chicano_setup",
       "_tgt": "thawing_room_chicano_logresetreason",
@@ -7943,7 +7964,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L222",
+      "source_location": "L225",
       "weight": 1.0,
       "_src": "thawing_room_chicano_setup",
       "_tgt": "thawing_room_chicano_loadmaintenancelock",
@@ -7955,7 +7976,19 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L223",
+      "source_location": "L226",
+      "weight": 1.0,
+      "_src": "thawing_room_chicano_setup",
+      "_tgt": "thawing_room_chicano_servicefanoverride",
+      "source": "thawing_room_chicano_setup",
+      "target": "thawing_room_chicano_servicefanoverride",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
+      "source_location": "L227",
       "weight": 1.0,
       "_src": "thawing_room_chicano_setup",
       "_tgt": "thawing_room_chicano_logbootevents",
@@ -7967,7 +8000,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L233",
+      "source_location": "L237",
       "weight": 1.0,
       "_src": "thawing_room_chicano_setup",
       "_tgt": "thawing_room_chicano_setstage",
@@ -7979,7 +8012,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L238",
+      "source_location": "L242",
       "weight": 1.0,
       "_src": "thawing_room_chicano_setup",
       "_tgt": "thawing_room_chicano_showstageleds",
@@ -7991,7 +8024,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L293",
+      "source_location": "L297",
       "weight": 1.0,
       "_src": "thawing_room_chicano_setup",
       "_tgt": "thawing_room_chicano_setupwatchdog",
@@ -8231,7 +8264,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L334",
+      "source_location": "L338",
       "weight": 1.0,
       "_src": "thawing_room_chicano_loop",
       "_tgt": "thawing_room_chicano_watchbrokerlink",
@@ -8243,7 +8276,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L336",
+      "source_location": "L340",
       "weight": 1.0,
       "_src": "thawing_room_chicano_loop",
       "_tgt": "thawing_room_chicano_updatetemperature",
@@ -8255,7 +8288,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L350",
+      "source_location": "L354",
       "weight": 1.0,
       "_src": "thawing_room_chicano_loop",
       "_tgt": "thawing_room_chicano_serviceremotecontrol",
@@ -8267,7 +8300,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L351",
+      "source_location": "L355",
       "weight": 1.0,
       "_src": "thawing_room_chicano_loop",
       "_tgt": "thawing_room_chicano_handleinputs",
@@ -8279,7 +8312,19 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L352",
+      "source_location": "L356",
+      "weight": 1.0,
+      "_src": "thawing_room_chicano_loop",
+      "_tgt": "thawing_room_chicano_servicefanoverride",
+      "source": "thawing_room_chicano_loop",
+      "target": "thawing_room_chicano_servicefanoverride",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
+      "source_location": "L357",
       "weight": 1.0,
       "_src": "thawing_room_chicano_loop",
       "_tgt": "thawing_room_chicano_servicemaintenanceleds",
@@ -8291,7 +8336,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L353",
+      "source_location": "L358",
       "weight": 1.0,
       "_src": "thawing_room_chicano_loop",
       "_tgt": "thawing_room_chicano_servicecalibration",
@@ -8303,7 +8348,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L355",
+      "source_location": "L360",
       "weight": 1.0,
       "_src": "thawing_room_chicano_loop",
       "_tgt": "thawing_room_chicano_handlestage",
@@ -8351,7 +8396,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L385",
+      "source_location": "L390",
       "weight": 1.0,
       "_src": "thawing_room_chicano_handleinputs",
       "_tgt": "thawing_room_chicano_setstage",
@@ -8363,7 +8408,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L387",
+      "source_location": "L392",
       "weight": 1.0,
       "_src": "thawing_room_chicano_handleinputs",
       "_tgt": "thawing_room_chicano_stoproutine",
@@ -8375,7 +8420,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L768",
+      "source_location": "L773",
       "weight": 1.0,
       "_src": "thawing_room_chicano_handlemqttmessage",
       "_tgt": "thawing_room_chicano_handleinputs",
@@ -8387,7 +8432,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1179",
+      "source_location": "L1184",
       "weight": 1.0,
       "_src": "thawing_room_chicano_serviceremotecontrol",
       "_tgt": "thawing_room_chicano_handleinputs",
@@ -8435,7 +8480,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L394",
+      "source_location": "L399",
       "weight": 1.0,
       "_src": "thawing_room_chicano_handlestage",
       "_tgt": "thawing_room_chicano_handlestage1",
@@ -8447,7 +8492,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L395",
+      "source_location": "L400",
       "weight": 1.0,
       "_src": "thawing_room_chicano_handlestage",
       "_tgt": "thawing_room_chicano_handlestage2",
@@ -8459,7 +8504,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L396",
+      "source_location": "L401",
       "weight": 1.0,
       "_src": "thawing_room_chicano_handlestage",
       "_tgt": "thawing_room_chicano_handlestage3",
@@ -8471,7 +8516,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L398",
+      "source_location": "L403",
       "weight": 1.0,
       "_src": "thawing_room_chicano_handlestage",
       "_tgt": "thawing_room_chicano_idle",
@@ -8483,7 +8528,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L399",
+      "source_location": "L404",
       "weight": 1.0,
       "_src": "thawing_room_chicano_handlestage",
       "_tgt": "thawing_room_chicano_stoproutine",
@@ -8495,7 +8540,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L413",
+      "source_location": "L418",
       "weight": 1.0,
       "_src": "thawing_room_chicano_handlestage1",
       "_tgt": "thawing_room_chicano_asyncloopsprinkler",
@@ -8507,7 +8552,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L427",
+      "source_location": "L432",
       "weight": 1.0,
       "_src": "thawing_room_chicano_handlestage1",
       "_tgt": "thawing_room_chicano_hasintervalpassed",
@@ -8519,7 +8564,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L432",
+      "source_location": "L437",
       "weight": 1.0,
       "_src": "thawing_room_chicano_handlestage1",
       "_tgt": "thawing_room_chicano_publishstatechange",
@@ -8531,7 +8576,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L501",
+      "source_location": "L506",
       "weight": 1.0,
       "_src": "thawing_room_chicano_handlestage1",
       "_tgt": "thawing_room_chicano_setstage",
@@ -8663,7 +8708,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L508",
+      "source_location": "L513",
       "weight": 1.0,
       "_src": "thawing_room_chicano_handlestage2",
       "_tgt": "thawing_room_chicano_asyncloopsprinkler",
@@ -8675,7 +8720,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L527",
+      "source_location": "L532",
       "weight": 1.0,
       "_src": "thawing_room_chicano_handlestage2",
       "_tgt": "thawing_room_chicano_hasintervalpassed",
@@ -8687,7 +8732,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L532",
+      "source_location": "L537",
       "weight": 1.0,
       "_src": "thawing_room_chicano_handlestage2",
       "_tgt": "thawing_room_chicano_publishstatechange",
@@ -8699,7 +8744,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L561",
+      "source_location": "L566",
       "weight": 1.0,
       "_src": "thawing_room_chicano_handlestage2",
       "_tgt": "thawing_room_chicano_publishpid",
@@ -8711,7 +8756,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L666",
+      "source_location": "L671",
       "weight": 1.0,
       "_src": "thawing_room_chicano_handlestage2",
       "_tgt": "thawing_room_chicano_setstage",
@@ -8795,7 +8840,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L673",
+      "source_location": "L678",
       "weight": 1.0,
       "_src": "thawing_room_chicano_handlestage3",
       "_tgt": "thawing_room_chicano_asyncloopsprinkler",
@@ -8807,7 +8852,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L692",
+      "source_location": "L697",
       "weight": 1.0,
       "_src": "thawing_room_chicano_handlestage3",
       "_tgt": "thawing_room_chicano_hasintervalpassed",
@@ -8819,7 +8864,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L696",
+      "source_location": "L701",
       "weight": 1.0,
       "_src": "thawing_room_chicano_handlestage3",
       "_tgt": "thawing_room_chicano_publishstatechange",
@@ -8891,7 +8936,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L785",
+      "source_location": "L790",
       "weight": 1.0,
       "_src": "thawing_room_chicano_handlemqttmessage",
       "_tgt": "thawing_room_chicano_updatesensorreading",
@@ -8903,7 +8948,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L813",
+      "source_location": "L818",
       "weight": 1.0,
       "_src": "thawing_room_chicano_handlemqttmessage",
       "_tgt": "thawing_room_chicano_setmaintenancelock",
@@ -8915,7 +8960,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1121",
+      "source_location": "L1126",
       "weight": 1.0,
       "_src": "thawing_room_chicano_callback",
       "_tgt": "thawing_room_chicano_handlemqttmessage",
@@ -9035,7 +9080,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1117",
+      "source_location": "L1122",
       "weight": 1.0,
       "_src": "thawing_room_chicano_callback",
       "_tgt": "thawing_room_chicano_readparam",
@@ -9215,7 +9260,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1186",
+      "source_location": "L1191",
       "weight": 1.0,
       "_src": "thawing_room_chicano_serviceremotecontrol",
       "_tgt": "thawing_room_chicano_setmaintenancelock",
@@ -9455,7 +9500,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1308",
+      "source_location": "L1314",
       "weight": 1.0,
       "_src": "thawing_room_chicano_stoproutine",
       "_tgt": "thawing_room_chicano_setstage",
@@ -9527,7 +9572,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1349",
+      "source_location": "L1355",
       "weight": 1.0,
       "_src": "thawing_room_chicano_sendsensorfault",
       "_tgt": "thawing_room_chicano_classifyfault",
@@ -9539,7 +9584,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1415",
+      "source_location": "L1421",
       "weight": 1.0,
       "_src": "thawing_room_chicano_updatesensorreading",
       "_tgt": "thawing_room_chicano_classifyfault",
@@ -9563,7 +9608,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1404",
+      "source_location": "L1410",
       "weight": 1.0,
       "_src": "thawing_room_chicano_updatesensorreading",
       "_tgt": "thawing_room_chicano_sendsensorfault",
@@ -9599,7 +9644,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1783",
+      "source_location": "L1825",
       "weight": 1.0,
       "_src": "thawing_room_chicano_aknowledgementroutine",
       "_tgt": "thawing_room_chicano_publishadcdiagnostics",
@@ -9635,7 +9680,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1436",
+      "source_location": "L1442",
       "weight": 1.0,
       "_src": "thawing_room_chicano_updatetemperature",
       "_tgt": "thawing_room_chicano_updatesensorreading",
@@ -9659,7 +9704,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1443",
+      "source_location": "L1449",
       "weight": 1.0,
       "_src": "thawing_room_chicano_updatetemperature",
       "_tgt": "thawing_room_chicano_gettempavg",
@@ -9731,7 +9776,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1481",
+      "source_location": "L1487",
       "weight": 1.0,
       "_src": "thawing_room_chicano_setstage",
       "_tgt": "thawing_room_chicano_showstageleds",
@@ -9815,7 +9860,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1563",
+      "source_location": "L1569",
       "weight": 1.0,
       "_src": "thawing_room_chicano_setmaintenancelock",
       "_tgt": "thawing_room_chicano_showstageleds",
@@ -9993,9 +10038,33 @@
     },
     {
       "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
+      "source_location": "L1590",
+      "weight": 1.0,
+      "_src": "thawing_room_chicano_servicefanoverride",
+      "_tgt": "eventlog_emit",
+      "source": "thawing_room_chicano_servicefanoverride",
+      "target": "eventlog_emit"
+    },
+    {
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
+      "source_location": "L1606",
+      "weight": 1.0,
+      "_src": "thawing_room_chicano_servicefanoverride",
+      "_tgt": "mqttclient_publishdata",
+      "source": "thawing_room_chicano_servicefanoverride",
+      "target": "mqttclient_publishdata"
+    },
+    {
+      "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1622",
+      "source_location": "L1662",
       "weight": 1.0,
       "_src": "thawing_room_chicano_publishpid",
       "_tgt": "thawing_room_chicano_hasintervalpassed",
@@ -10007,7 +10076,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1748",
+      "source_location": "L1789",
       "weight": 1.0,
       "_src": "thawing_room_chicano_asyncloopsprinkler",
       "_tgt": "thawing_room_chicano_hasintervalpassed",
@@ -10019,7 +10088,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1629",
+      "source_location": "L1669",
       "weight": 1.0,
       "_src": "thawing_room_chicano_publishpid",
       "_tgt": "thawing_room_chicano_publishstatechange",
@@ -10031,7 +10100,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1679",
+      "source_location": "L1719",
       "weight": 1.0,
       "_src": "thawing_room_chicano_initstage1",
       "_tgt": "thawing_room_chicano_publishstatechange",
@@ -10043,7 +10112,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1690",
+      "source_location": "L1730",
       "weight": 1.0,
       "_src": "thawing_room_chicano_initstage2",
       "_tgt": "thawing_room_chicano_publishstatechange",
@@ -10055,7 +10124,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1698",
+      "source_location": "L1738",
       "weight": 1.0,
       "_src": "thawing_room_chicano_initstage3",
       "_tgt": "thawing_room_chicano_publishstatechange",
@@ -10067,7 +10136,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1755",
+      "source_location": "L1796",
       "weight": 1.0,
       "_src": "thawing_room_chicano_asyncloopsprinkler",
       "_tgt": "thawing_room_chicano_publishstatechange",
@@ -10115,7 +10184,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/Thawing-room-chicano.cpp",
-      "source_location": "L1781",
+      "source_location": "L1823",
       "weight": 1.0,
       "_src": "thawing_room_chicano_aknowledgementroutine",
       "_tgt": "thawing_room_chicano_publishpid",
@@ -10475,7 +10544,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/MqttClient.h",
-      "source_location": "L119",
+      "source_location": "L120",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_mqttclient_h",
       "_tgt": "mqttclient_mqttclient",
@@ -15011,7 +15080,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "/Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new/src/hardware/RemoteControl.h",
-      "source_location": "L65",
+      "source_location": "L66",
       "weight": 1.0,
       "_src": "users_elw_documents_programacion_fish_proyect_projects_thawing_room_zdauto_version_thawing_room_chicano_new_src_hardware_remotecontrol_h",
       "_tgt": "remotecontrol_remotecontrol",

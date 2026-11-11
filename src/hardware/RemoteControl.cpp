@@ -153,8 +153,8 @@ void RemoteControl::writeJSON(Print &out) {
     out.printf("\"fa\":%d,\"fs\":%d,\"fc\":%d,\"ca\":%u,\"cs\":%u,\"cc\":%u},",
                s.ta_fault, s.ts_fault, s.tc_fault, s.ta_counts, s.ts_counts, s.tc_counts);
 
-    out.printf("\"out\":{\"fan\":%d,\"rev\":%d,\"damper\":%d,\"s1\":%d,\"air\":%u,\"air_max\":%u},",
-               s.fan_on, s.fan_reverse, s.damper, s.sprinkler, s.air_duty, s.air_max);
+    out.printf("\"out\":{\"fan\":%d,\"rev\":%d,\"ov\":%d,\"damper\":%d,\"s1\":%d,\"air\":%u,\"air_max\":%u},",
+               s.fan_on, s.fan_reverse, s.fan_override, s.damper, s.sprinkler, s.air_duty, s.air_max);
     out.printf("\"s2\":{\"set\":%d,\"h\":%u,\"m\":%u,\"d\":%u,\"mo\":%u,\"left\":%ld},",
                s.s2_set, s.s2_hour, s.s2_minute, s.s2_day, s.s2_month, (long)s.s2_remaining_min);
     out.printf("\"lock\":{\"on\":%d,\"since\":%lu,\"src\":%u},", s.lock, (unsigned long)s.lock_since, s.lock_source);

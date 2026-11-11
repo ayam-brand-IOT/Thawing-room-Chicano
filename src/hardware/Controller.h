@@ -122,8 +122,8 @@ private:
     // Digital pins configuration
     uint8_t outputs[6] = {STAGE_1_IO, STAGE_2_IO, STAGE_3_IO, FAN_CCW_IO, FAN_CW_IO, AIR_DAMPER_IO};
     uint8_t outputs_size = 6;
-    uint8_t inputs[3] = {START_IO, DLY_S_IO, STOP_IO};
-    uint8_t inputs_size = 3;
+    uint8_t inputs[4] = {START_IO, DLY_S_IO, STOP_IO, FAN_OVERRIDE_IO};
+    uint8_t inputs_size = 4;
     uint8_t pulled_up[0] = {};  // No pulled up pins currently defined
     uint8_t pulled_up_size = 0;
 

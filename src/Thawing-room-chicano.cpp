@@ -80,6 +80,9 @@ bool     maintenance_lock = false;
 uint32_t maintenance_since = 0;     // epoch LOCAL de activación (0 = desconocido)
 uint8_t  maintenance_source = SRC_SYSTEM;
 
+// Selector de override de fans. Solo lectura: el firmware no prende ni apaga nada por él.
+bool     fan_override = false;
+
 // ########################## TASKS ##########################
 Task low_priority_msgs(10000, TASK_FOREVER, &aknowledgementRoutine);
 Task high_priority_msgs(3000, TASK_FOREVER, &publishTemperatures);
@@ -220,6 +223,7 @@ void setup() {
   // porque loop() todavía no corrió.
   logger.setClock(current_date, controller.isTimeTrusted());
   loadMaintenanceLock();
+  serviceFanOverride(true);   // estado inicial del selector (el pin ya está en INPUT_PULLUP)
   logBootEvents(config_ok, online);
 
   StageState last_state = controller.getLastState();
@@ -349,6 +353,7 @@ void loop() {
 
   serviceRemoteControl(current_date);
   handleInputs();
+  serviceFanOverride();
   serviceMaintenanceLeds();
   serviceCalibration();
 
@@ -1243,6 +1248,7 @@ void serviceRemoteControl(const DateTime &now) {
 
   s.fan_on = controller.getFanState();
   s.fan_reverse = s.fan_on && controller.readDigitalInput(FAN_CCW_IO);
+  s.fan_override = fan_override;
   s.damper = controller.readDigitalInput(AIR_DAMPER_IO);
   s.sprinkler = controller.readDigitalInput(VALVE_IO);
   s.air_duty = controller.getAirDuty();
@@ -1567,6 +1573,40 @@ bool setMaintenanceLock(bool on, EventSource source) {
   return true;
 }
 
+// ---- Override de fans ----
+// El selector del tablero puede prender los fans saltándose al controlador; a veces se
+// permite, pero tiene que quedar constancia. Es un selector que se queda en su posición,
+// no un botón: el cambio cuenta cuando el pin se sostiene FAN_OVERRIDE_STABLE_MS, así un
+// pico de ruido en el cable no deja un evento falso. En boot se toma el estado tal cual.
+void serviceFanOverride(bool boot) {
+  static bool     last_raw = false;
+  static uint32_t raw_since = 0;
+
+  const bool raw = digitalRead(FAN_OVERRIDE_IO) == FAN_OVERRIDE_ACTIVE;
+  if (boot) {
+    last_raw = fan_override = raw;
+    raw_since = millis();
+    if (raw) {
+      LOG_W(TAG_APP, "Override de fans ACTIVO desde el arranque");
+      events.emit(EV_ALERT, SRC_MANUAL, "Fan override switch is ON at startup: fans run by hand, not by the controller");
+    }
+    return;
+  }
+
+  if (raw != last_raw) { last_raw = raw; raw_since = millis(); }
+  if (raw == fan_override || millis() - raw_since < FAN_OVERRIDE_STABLE_MS) return;
+
+  fan_override = raw;
+  if (raw) {
+    LOG_W(TAG_APP, "Override de fans ACTIVADO en el tablero (etapa %d)", (int)currentState.stage);
+    events.emit(EV_ALERT, SRC_MANUAL, "Fan override switch ON: fans turned on by hand, bypassing the controller");
+  } else {
+    LOG_I(TAG_APP, "Override de fans desactivado en el tablero (etapa %d)", (int)currentState.stage);
+    events.emit(EV_SYSTEM, SRC_MANUAL, "Fan override switch OFF: fans back under the controller");
+  }
+  mqtt.publishData(FAN_OVERRIDE_STATE, fan_override);
+}
+
 // Las 3 luces de etapa parpadean juntas mientras dure el bloqueo: se ve desde el pasillo
 // que el cuarto está en reparación. No bloqueante, 500 ms encendido / 500 ms apagado.
 void serviceMaintenanceLeds() {
@@ -1734,6 +1774,7 @@ void onMQTTConnect() {
   mqtt.publishData(m_S1, controller.readDigitalInput(VALVE_IO));
   mqtt.publishData(STAGE, currentState.stage);
   mqtt.publishData(MAINTENANCE_STATE, maintenance_lock);
+  mqtt.publishData(FAN_OVERRIDE_STATE, fan_override);
   mqtt.publishData(TA_TOPIC, TA);
   mqtt.publishData(TS_TOPIC, TS);
   mqtt.publishData(TC_TOPIC, TC);
@@ -1769,6 +1810,7 @@ void asyncLoopSprinkler(uint32_t &timer, uint32_t offTime, uint32_t onTime) {
 void aknowledgementRoutine(){
   mqtt.publishData(STAGE, currentState.stage);
   mqtt.publishData(MAINTENANCE_STATE, maintenance_lock);
+  mqtt.publishData(FAN_OVERRIDE_STATE, fan_override);
 
   mqtt.publishData(m_F1, controller.getFanState());
   mqtt.publishData(m_F1_CCW, controller.readDigitalInput(FAN_CCW_IO));

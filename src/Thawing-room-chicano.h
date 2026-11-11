@@ -88,6 +88,8 @@ void serviceRemoteControl(const DateTime &now);
 void loadMaintenanceLock();
 bool setMaintenanceLock(bool on, EventSource source);
 void serviceMaintenanceLeds();
+// Selector de override de fans (FAN_OVERRIDE_IO): solo se monitorea y se reporta.
+void serviceFanOverride(bool boot = false);
 void serviceCalibration();
 void showStageLeds();
 
