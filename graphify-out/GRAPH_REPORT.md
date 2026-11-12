@@ -1,12 +1,12 @@
-# Graph Report - /Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new  (2026-11-04)
+# Graph Report - /Users/elw/Documents/Programacion/Fish_proyect/Projects/Thawing Room/ZDAuto Version/Thawing-room-Chicano_new  (2026-11-12)
 
 ## Corpus Check
-- 41 files · ~94,420 words
+- 41 files · ~94,678 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 404 nodes · 1041 edges · 30 communities detected
-- Extraction: 62% EXTRACTED · 38% INFERRED · 0% AMBIGUOUS · INFERRED: 394 edges (avg confidence: 0.8)
+- 409 nodes · 1060 edges · 30 communities detected
+- Extraction: 62% EXTRACTED · 38% INFERRED · 0% AMBIGUOUS · INFERRED: 405 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
@@ -42,16 +42,16 @@
 - [[_COMMUNITY_Community 29|Community 29]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `println()` - 47 edges
+1. `println()` - 48 edges
 2. `setup()` - 28 edges
 3. `begin()` - 26 edges
-4. `write()` - 25 edges
+4. `write()` - 26 edges
 5. `handleStage1()` - 21 edges
 6. `serviceRemoteControl()` - 21 edges
 7. `setUpWebServer()` - 21 edges
 8. `getDateTime()` - 19 edges
-9. `handleStage2()` - 18 edges
-10. `DEBUG()` - 18 edges
+9. `read()` - 19 edges
+10. `handleStage2()` - 18 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `rename()` --calls--> `end()`  [INFERRED]
@@ -69,43 +69,43 @@
 
 ### Community 0 - "Community 0"
 Cohesion: 0.07
-Nodes (52): begin(), buildFallbackDateTime(), checkAndInsertBottomTemps(), Controller(), DEBUG(), ERROR(), forceNTPSync(), getAvgBottomTemp() (+44 more)
+Nodes (50): begin(), buildFallbackDateTime(), checkAndInsertBottomTemps(), connectToWiFi(), Controller(), DEBUG(), forceNTPSync(), getAdcMedian() (+42 more)
 
 ### Community 1 - "Community 1"
-Cohesion: 0.11
-Nodes (44): getFanState(), getRemainingMinutesToStage2(), readDigitalInput(), turnOnFan(), writeAnalogOutput(), writeDigitalOutput(), setClock(), publishData() (+36 more)
+Cohesion: 0.08
+Nodes (42): findAdcMedian(), getAdcDiag(), getRemainingMinutesToStage2(), hasIRSensor(), isRTCConnected(), isStage2TimeSet(), jsonBuilder(), appendSD() (+34 more)
 
 ### Community 2 - "Community 2"
 Cohesion: 0.11
-Nodes (36): begin(), cardSize(), cardType(), CRC16(), CRC7(), ff_sd_initialize(), ff_sd_ioctl(), ff_sd_read() (+28 more)
+Nodes (37): getSDInfo(), begin(), cardSize(), cardType(), CRC16(), CRC7(), ff_sd_initialize(), ff_sd_ioctl() (+29 more)
 
 ### Community 3 - "Community 3"
-Cohesion: 0.1
-Nodes (35): begin(), channelKey(), factoryOffset(), factorySlope(), parseCal(), post(), printCal(), putCal() (+27 more)
+Cohesion: 0.13
+Nodes (36): getFanState(), readDigitalInput(), turnOnFan(), writeAnalogOutput(), writeDigitalOutput(), println(), DEBUG(), destroy() (+28 more)
 
 ### Community 4 - "Community 4"
-Cohesion: 0.12
-Nodes (31): exists(), isValidJson(), migrateFromSD(), read(), readRaw(), write(), setUpDefaultParameters(), writeRing() (+23 more)
+Cohesion: 0.13
+Nodes (32): copyKeyIfMissing(), exists(), isValidJson(), migrateFromSD(), read(), readRaw(), write(), setUpDefaultParameters() (+24 more)
 
 ### Community 5 - "Community 5"
-Cohesion: 0.11
-Nodes (27): connectToWiFi(), isWiFiConnected(), reconnectWiFi(), WiFiLoop(), backgroundTasks(), watchBrokerLink(), connectToWiFi(), DEBUG() (+19 more)
+Cohesion: 0.08
+Nodes (33): ERROR(), isWiFiConnected(), reconnectWiFi(), runConfigFile(), startConfigPortal(), WiFiLoop(), setClock(), setOutput() (+25 more)
 
 ### Community 6 - "Community 6"
-Cohesion: 0.11
-Nodes (24): findAdcMedian(), getAdcDiag(), getAdcMedian(), hasIRSensor(), isStage2TimeSet(), jsonBuilder(), medianOf(), readTempFrom() (+16 more)
+Cohesion: 0.1
+Nodes (32): begin(), channelKey(), factoryOffset(), factorySlope(), parseCal(), post(), printCal(), putCal() (+24 more)
 
 ### Community 7 - "Community 7"
-Cohesion: 0.15
-Nodes (22): isLoraTc(), isTsContactLess(), setLoraTc(), setTsContactLess(), updateDefaultParameters(), connect(), DEBUG(), ERROR() (+14 more)
+Cohesion: 0.19
+Nodes (19): saveLogToSD(), begin(), drain(), ensureLogFolder(), getFileName(), init(), levelName(), log() (+11 more)
 
 ### Community 8 - "Community 8"
-Cohesion: 0.18
-Nodes (21): saveLogToSD(), begin(), drain(), ensureLogFolder(), getFileName(), getSDInfo(), init(), levelName() (+13 more)
+Cohesion: 0.2
+Nodes (17): calApply(), calValidate(), segment(), main(), makeCal(), tearDown(), test_es_monotona(), test_extrapola_con_el_tramo_de_la_orilla() (+9 more)
 
 ### Community 9 - "Community 9"
 Cohesion: 0.22
-Nodes (16): calApply(), calValidate(), segment(), rawToTemp(), makeCal(), test_es_monotona(), test_extrapola_con_el_tramo_de_la_orilla(), test_interpola_recto_dentro_de_cada_tramo() (+8 more)
+Nodes (15): connect(), DEBUG(), ERROR(), fullTopic(), isConnected(), isServiceAvailable(), loop(), onConnect() (+7 more)
 
 ### Community 10 - "Community 10"
 Cohesion: 0.14
@@ -230,14 +230,14 @@ Nodes (0):
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `println()` connect `Community 8` to `Community 0`, `Community 1`, `Community 3`, `Community 4`, `Community 5`, `Community 6`, `Community 7`?**
-  _High betweenness centrality (0.158) - this node is a cross-community bridge._
-- **Why does `write()` connect `Community 4` to `Community 0`, `Community 2`, `Community 3`, `Community 5`, `Community 7`, `Community 8`?**
+- **Why does `println()` connect `Community 3` to `Community 0`, `Community 1`, `Community 2`, `Community 4`, `Community 5`, `Community 6`, `Community 7`, `Community 9`?**
+  _High betweenness centrality (0.164) - this node is a cross-community bridge._
+- **Why does `write()` connect `Community 4` to `Community 0`, `Community 2`, `Community 3`, `Community 5`, `Community 6`, `Community 7`?**
   _High betweenness centrality (0.131) - this node is a cross-community bridge._
-- **Why does `end()` connect `Community 0` to `Community 2`, `Community 3`, `Community 4`, `Community 5`?**
-  _High betweenness centrality (0.075) - this node is a cross-community bridge._
-- **Are the 37 inferred relationships involving `println()` (e.g. with `printStackUsage()` and `setup()`) actually correct?**
-  _`println()` has 37 INFERRED edges - model-reasoned connections that need verification._
+- **Why does `end()` connect `Community 0` to `Community 1`, `Community 2`, `Community 4`?**
+  _High betweenness centrality (0.074) - this node is a cross-community bridge._
+- **Are the 38 inferred relationships involving `println()` (e.g. with `printStackUsage()` and `setup()`) actually correct?**
+  _`println()` has 38 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 20 inferred relationships involving `setup()` (e.g. with `init()` and `begin()`) actually correct?**
   _`setup()` has 20 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 25 inferred relationships involving `begin()` (e.g. with `setUp()` and `setup()`) actually correct?**

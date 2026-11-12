@@ -76,6 +76,35 @@ void test_tmp_colgado_no_afecta_lectura(void) {
     TEST_ASSERT_EQUAL_STRING("{\"real\":1}", ConfigStore::read(PATH).c_str());
 }
 
+// --- copyKeyIfMissing() (TOPIC sembrado desde HOST_NAME) -----------------------
+
+void test_copykey_agrega_topic_desde_hostname(void) {
+    SPIFFS.mockSet(PATH, "{\"SSID\":\"x\",\"HOST_NAME\":\"cf-room4\",\"PORT\":\"1883\"}");
+    TEST_ASSERT_TRUE(ConfigStore::copyKeyIfMissing(PATH, "TOPIC", "HOST_NAME"));
+    TEST_ASSERT_EQUAL_STRING("{\"SSID\":\"x\",\"HOST_NAME\":\"cf-room4\",\"PORT\":\"1883\",\"TOPIC\":\"cf-room4\"}",
+                             SPIFFS.mockGet(PATH).c_str());
+    // Idempotente: en el siguiente arranque ya no escribe
+    TEST_ASSERT_FALSE(ConfigStore::copyKeyIfMissing(PATH, "TOPIC", "HOST_NAME"));
+}
+
+void test_copykey_no_pisa_topic_existente(void) {
+    const char* cfg = "{\"HOST_NAME\":\"cf-room4\",\"TOPIC\":\"cfpp4/\"}";
+    SPIFFS.mockSet(PATH, cfg);
+    TEST_ASSERT_FALSE(ConfigStore::copyKeyIfMissing(PATH, "TOPIC", "HOST_NAME"));
+    TEST_ASSERT_EQUAL_STRING(cfg, SPIFFS.mockGet(PATH).c_str());
+}
+
+void test_copykey_sin_hostname_no_escribe(void) {
+    SPIFFS.mockSet(PATH, "{\"SSID\":\"x\",\"HOST_NAME\":\"\"}");
+    TEST_ASSERT_FALSE(ConfigStore::copyKeyIfMissing(PATH, "TOPIC", "HOST_NAME"));
+    TEST_ASSERT_FALSE(SPIFFS.mockHas(bak(PATH).c_str()));   // no hubo write()
+}
+
+void test_copykey_sin_archivo_no_escribe(void) {
+    TEST_ASSERT_FALSE(ConfigStore::copyKeyIfMissing(PATH, "TOPIC", "HOST_NAME"));
+    TEST_ASSERT_FALSE(SPIFFS.mockHas(PATH));
+}
+
 int main(int, char**) {
     UNITY_BEGIN();
     RUN_TEST(test_write_rechaza_json_invalido);
@@ -86,5 +115,9 @@ int main(int, char**) {
     RUN_TEST(test_read_principal_corrupto_recupera_bak);
     RUN_TEST(test_read_principal_y_bak_corruptos_devuelve_vacio);
     RUN_TEST(test_tmp_colgado_no_afecta_lectura);
+    RUN_TEST(test_copykey_agrega_topic_desde_hostname);
+    RUN_TEST(test_copykey_no_pisa_topic_existente);
+    RUN_TEST(test_copykey_sin_hostname_no_escribe);
+    RUN_TEST(test_copykey_sin_archivo_no_escribe);
     return UNITY_END();
 }

@@ -124,6 +124,27 @@ bool ConfigStore::write(const char* path, const String& data) {
     return true;
 }
 
+bool ConfigStore::copyKeyIfMissing(const char* path, const char* key, const char* from_key) {
+    ScopedLock lock(mutex);
+
+    const String content = read(path);
+    if (content.length() == 0) return false;
+
+    DynamicJsonDocument doc(2048);
+    if (deserializeJson(doc, content) != DeserializationError::Ok) return false;
+    if (doc.containsKey(key)) return false;
+
+    const String value = doc[from_key] | "";
+    if (value.length() == 0) return false;
+    doc[key] = value;
+
+    String out;
+    serializeJson(doc, out);
+    if (!write(path, out)) return false;
+    logger.println(("[ConfigStore] " + String(path) + ": added " + String(key) + " = " + value).c_str());
+    return true;
+}
+
 bool ConfigStore::migrateFromSD(const char* path) {
     if (SPIFFS.exists(path)) return false;   // ya está en SPIFFS: nada que migrar
     if (!SD.exists(path))    return false;   // la SD no lo tiene (o no hay SD)

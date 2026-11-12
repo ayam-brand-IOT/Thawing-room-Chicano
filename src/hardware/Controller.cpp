@@ -42,6 +42,11 @@ void Controller::init() {
     const bool m2 = ConfigStore::migrateFromSD(DEFAULT_PARAMS_FILE);
     if (m1 || m2) DEBUG("Config migrated from SD to SPIFFS");
   }
+
+  // TOPIC llegó después de HOST_NAME: un config.txt de una versión anterior (de la SD o
+  // ya en SPIFFS) no lo trae y el cuarto caía al prefijo por defecto. Se siembra con el
+  // hostname; siguen siendo campos separados y cualquiera de los dos se puede cambiar.
+  ConfigStore::copyKeyIfMissing(CONFIG_FILE, "TOPIC", "HOST_NAME");
 }
 
 void Controller::setUpLogger() {

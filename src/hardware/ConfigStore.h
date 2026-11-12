@@ -40,6 +40,11 @@ public:
     // Devuelve true si se migró un archivo en esta llamada.
     static bool migrateFromSD(const char* path);
 
+    // Si el JSON de 'path' no trae 'key', lo crea con el valor de 'from_key' y lo guarda
+    // (por write(), atómico). No toca un 'key' existente ni escribe si 'from_key' falta o
+    // está vacío. Devuelve true si escribió.
+    static bool copyKeyIfMissing(const char* path, const char* key, const char* from_key);
+
 private:
     static bool isValidJson(const String& data);
     static String readRaw(const char* path);
